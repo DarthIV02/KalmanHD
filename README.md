@@ -8,3 +8,6 @@ Organization of the files:
 - Multi_model_RegHD: Is the implementation of multimodel RegHD
 - Multi_modelRegHD_debug: Is diffrent test on Multimodel RegHD, especifically to test the distribution of the clusters
 - Multi_Model_RegHD_allterations: Last version of RegHD were I'm testing the diffrent possible alterations of the model t make it more efficient.
+- Clustering Tests: Initial test of implementation of each clusterization method (Kmeans + Spectral Clustering) + Visualization of hd vectors on each clusterization
+- Mod_Clustering_RegHD: RSME of Normal RegHD VS Kmeans RegHD VS Spectral Clustering RegHD
+- Contextual_Aware_Encoding_test: Initial trials for Contextual Aware Encoding
