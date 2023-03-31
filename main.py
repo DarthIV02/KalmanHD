@@ -43,7 +43,7 @@ def parse_option():
     parser.add_argument('--trial', type=int, default=0,
                         help='id for recording multiple runs')
     
-    parser.add_argument('--model', type=str, default='RegHD', 
+    parser.add_argument('--model', type=str, default='DNN',  # CHAAAAANGE
                         choices=['RegHD', 'VAE', 'DNN'],
                         help='Model to test')
     
@@ -53,7 +53,7 @@ def parse_option():
     parser.add_argument('--levels', type=int, default=6, 
                         help='Number of levels to divide encoding when using a different hd-encoder')
     
-    parser.add_argument('--retraining', type=bool, default=False, 
+    parser.add_argument('--retraining', type=bool, default=True, # CHANGEEEE
                         help='If the model with this particular data, has been previously trained, set retraining = True')
     
     opt = parser.parse_args()
@@ -85,14 +85,17 @@ def main():
         model.train(sets_training, matrix_1_norm, opt.epochs)
         model.test(sets_testing, matrix_1_norm)
 
-    if opt.model == "VAE":
-        from models.DNN import Return_Model, Train_Model, Test_Model
-        model = Return_Model(opt.size_of_sample)
-        Train_Model(model, matrix_1_norm, sets_training, opt.retraining, opt.dataset, opt.size_of_sample, opt.epochs)
-        Test_Model(model, matrix_1_norm, sets_testing, opt.size_of_sample)        
-
     if opt.model == "DNN":
-        pass
+        from models.DNN.DNN import Return_Model, Train_Model, Test_Model
+        model = Return_Model(opt.size_of_sample)
+        model = Train_Model(model, matrix_1_norm, sets_training, opt.retraining, opt.dataset, opt.size_of_sample, opt.epochs)
+        model, dif_dnn = Test_Model(model, matrix_1_norm, sets_testing, opt.size_of_sample)        
+
+    if opt.model == "VAE":
+       from models.VAE.VAE import Return_Model, Train_Model, Test_Model
+       vae, enc, dec, es = model = Return_Model(opt.size_of_sample)
+       vae, enc, dec, es = Train_Model(vae, es, matrix_1_norm, sets_training, opt.retraining, opt.dataset, opt.size_of_sample + 1, opt.epochs)
+       vae, dif_vae = Test_Model(vae, matrix_1_norm, sets_testing, opt.size_of_sample)   
 
 if __name__ == '__main__':
     main()

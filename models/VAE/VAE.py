@@ -12,7 +12,7 @@ import os
 import random
 
 latent_dim = 2
-sequence_length = 41
+#sequence_length = 41
 
 
 def set_seed(seed):
@@ -33,7 +33,7 @@ def sampling(args):
     return z_mean + K.exp(0.5 * z_log_sigma) * epsilon
 
 
-def vae_loss(inp, original, out, z_log_sigma, z_mean):
+def vae_loss(inp, original, out, z_log_sigma, z_mean, sequence_length):
 
     reconstruction = K.mean(K.square(original - out)) * sequence_length
     kl = -0.5 * K.mean(1 + z_log_sigma - K.square(z_mean) - K.exp(z_log_sigma))
@@ -41,7 +41,7 @@ def vae_loss(inp, original, out, z_log_sigma, z_mean):
     return reconstruction + kl
 
 
-def get_model():
+def get_model(sequence_length):
 
     map_col = dict()
     map_col['traffic_volume_past'] = 0
@@ -93,7 +93,7 @@ def get_model():
     pred = decoder([z] + cat_inp)
 
     vae = Model(cat_inp + [inp, inp_original], pred)
-    vae.add_loss(vae_loss(inp, inp_original, pred, z_log_sigma, z_mean))
+    vae.add_loss(vae_loss(inp, inp_original, pred, z_log_sigma, z_mean, sequence_length))
     vae.compile(loss=None, optimizer=Adam(lr=1e-3))
 
     return vae, encoder, decoder
@@ -107,7 +107,7 @@ def gen_seq(ts, id_df, seq_length, seq_cols, id):
     num_elements = len(data_matrix)
 
     stop = id+seq_length
-    return data_matrix[stop-sequence_length:stop]
+    return data_matrix[stop-seq_length:stop]
 
 
 def drop_fill_pieces(sequence_input, sequence_target, missing_val=np.nan):
@@ -138,14 +138,14 @@ class Scaler1D:
         return (X*self.std) + self.mean
 
 
-def Return_Model():
+def Return_Model(sequence_length):
     es = EarlyStopping(patience=10, verbose=1, min_delta=0.001,
                        monitor='val_loss', mode='auto', restore_best_weights=True)
-    vae, enc, dec = get_model()
+    vae, enc, dec = get_model(sequence_length)
     return vae, enc, dec, es
 
 
-def Train_Model(vae, es, matrix, sets_training, retraining, dataset):
+def Train_Model(vae, es, matrix, sets_training, retraining, dataset, sequence_length, epochs):
 
     if retraining:
 
@@ -177,7 +177,7 @@ def Train_Model(vae, es, matrix, sets_training, retraining, dataset):
 
         ### GENERATE 3D SEQUENCES ###
 
-        sequence_length = 41
+        # sequence_length = 41
 
         sequence_input = []
         sequence_target = []
@@ -231,14 +231,14 @@ def Train_Model(vae, es, matrix, sets_training, retraining, dataset):
                            monitor='loss', mode='auto', restore_best_weights=True)
         vae, enc, dec = get_model()
         vae.fit([sequence_input_train[:, :, 0]] + [sequence_target_drop_train, sequence_target_train],
-                epochs=10, shuffle=False, callbacks=[es])
+                epochs=epochs, shuffle=False, callbacks=[es])
 
         vae.save_weights(f"trained_models/vae-{dataset}.h5")
 
         return vae, enc, dec, es
 
 
-def Test_Model(vae, matrix, sets_testing):
+def Test_Model(vae, matrix, sets_testing, sequence_length):
 
     a_full = []
     for i in range(matrix.shape[0]):
