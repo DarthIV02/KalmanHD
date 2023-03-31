@@ -3,10 +3,10 @@ from keras.layers import Dense, Dropout, Flatten, BatchNormalization, Input
 from keras.layers import Conv1D, BatchNormalization, GlobalAveragePooling1D, Permute, Dropout
 from keras.models import Sequential, Model
 from sktime_dl.utils.layer_utils import AttentionLSTM
+from sklearn.metrics import mean_squared_error
 
 import numpy as np
 import torch
-import torchmetrics
 from tqdm import tqdm
 
 
@@ -30,8 +30,8 @@ def squeeze_excite_block(input):
     return se
 
 
-def generate_model():
-    ip = Input(shape=(1, 40))
+def generate_model(size):
+    ip = Input(shape=(1, size))
     # stride = 10
 
     # x = Permute((2, 1))(ip)
@@ -80,31 +80,28 @@ def generate_model():
     return model
 
 
-def Return_Model():
-    model_noise_resilience = generate_model()
+def Return_Model(size):
+    model_noise_resilience = generate_model(size)
     return model_noise_resilience
 
 
-def Train_Model(model, matrix, sets_training, retraining, dataset):
-    time_arr = []
+def Train_Model(model, matrix, sets_training, retraining, dataset, size, epochs):
 
     if retraining:
-        model.load_weights(f"trained_models/dnn-{dataset}.h5")
+        model.load_weights(f"trained_models/dnn-{dataset}_{size}_{epochs}.h5")
 
     else:
         # IF TRAINING FOR THE FIRST TIME
 
         Y_train = np.zeros((matrix.shape[0]*len(sets_training), ))
-        X_train = np.zeros((matrix.shape[0]*len(sets_training), 40))
+        X_train = np.zeros((matrix.shape[0]*len(sets_training), size))
 
         test = 0
 
         with torch.no_grad():  # disabled gradient calculation because were doing it manually
-            mse = torchmetrics.MeanSquaredError()
-            for num, i in tqdm(enumerate(sets_training)):
-                pred = []
-                samples = matrix[:, i:i+40]
-                labels = matrix[:, i+40]
+            for i in tqdm(sets_training):
+                samples = matrix[:, i:i+size]
+                labels = matrix[:, i+size]
                 # print(f"sample: {samples}, label:{labels}")
                 # samples = samples.to(device) # pass sample and label (1 at a time)
                 # labels = labels.to(device)
@@ -116,36 +113,34 @@ def Train_Model(model, matrix, sets_training, retraining, dataset):
 
         X_train = X_train.reshape(X_train.shape[0], 1, X_train.shape[1])
 
-        model.fit(X_train, Y_train, epochs=10, batch_size=128)
+        model.fit(X_train, Y_train, epochs=epochs, batch_size=128)
 
-        model.save_weights(f"trained_models/dnn-{dataset}.h5")
+        model.save_weights(f"trained_models/dnn-{dataset}_{size}_{epochs}.h5")
 
-    return model, time_arr
+    return model
 
 
-def Test_Model(model, matrix, sets_testing):
+def Test_Model(model, matrix, sets_testing, size):
 
     dif_dnn = []
 
     with torch.no_grad():
-        mse = torchmetrics.MeanSquaredError()
         for i in tqdm(sets_testing):
             pred = []
-            samples = matrix[:, i:i+40]
-            labels = matrix[:, i+40]
+            labels_full = []
+            samples = matrix[:, i:i+size]
+            labels = matrix[:, i+size]
             for n in range(samples.shape[0]):
                 sample = samples[n, :]
                 sample2 = sample.reshape(1, 1, sample.shape[0])
 
                 # Pass samples from test to model (forward function)
-                predictions = model.predict(sample2)
+                predictions = model.predict(sample2)[0][0]
                 pred.append(predictions)
-
-                mse.update(torch.tensor(
-                    predictions[0, 0]), torch.tensor(labels[n]))
-
+                labels_full.append(labels[n])
                 dif_dnn.append(np.absolute(labels[n]-predictions))
 
-    print(f"Testing mean squared error of {(mse.compute().item()):.3f}")
+    print(
+            f"Testing root mean squared error of testing {(mean_squared_error(labels_full, pred, squared=False)):.3f}")
 
     return model, dif_dnn
