@@ -43,7 +43,7 @@ def parse_option():
     parser.add_argument('--trial', type=int, default=0,
                         help='id for recording multiple runs')
     
-    parser.add_argument('--model', type=str, default='DNN',  # CHAAAAANGE
+    parser.add_argument('--model', type=str, default='VAE',  # CHAAAAANGE
                         choices=['RegHD', 'VAE', 'DNN'],
                         help='Model to test')
     
@@ -93,9 +93,9 @@ def main():
 
     if opt.model == "VAE":
        from models.VAE.VAE import Return_Model, Train_Model, Test_Model
-       vae, enc, dec, es = model = Return_Model(opt.size_of_sample)
+       vae, enc, dec, es = model = Return_Model(opt.size_of_sample + 1)
        vae, enc, dec, es = Train_Model(vae, es, matrix_1_norm, sets_training, opt.retraining, opt.dataset, opt.size_of_sample + 1, opt.epochs)
-       vae, dif_vae = Test_Model(vae, matrix_1_norm, sets_testing, opt.size_of_sample)   
+       vae, dif_vae = Test_Model(vae, matrix_1_norm, sets_testing, opt.size_of_sample + 1)   
 
 if __name__ == '__main__':
     main()

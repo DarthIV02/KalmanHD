@@ -10,6 +10,7 @@ import pandas as pd
 import numpy as np
 import os
 import random
+from sklearn.metrics import mean_squared_error
 
 latent_dim = 2
 #sequence_length = 41
@@ -61,9 +62,6 @@ def get_model(sequence_length):
         cat_inp.append(inp_c)
         cat_emb.append(emb)
 
-    # print(cat_inp)
-    # print(cat_emb)
-
     concat = Concatenate()(cat_emb + [inp])
     enc = LSTM(64)(concat)
 
@@ -94,7 +92,7 @@ def get_model(sequence_length):
 
     vae = Model(cat_inp + [inp, inp_original], pred)
     vae.add_loss(vae_loss(inp, inp_original, pred, z_log_sigma, z_mean, sequence_length))
-    vae.compile(loss=None, optimizer=Adam(lr=1e-3))
+    vae.compile(loss=None, optimizer=Adam(learning_rate=1e-3))
 
     return vae, encoder, decoder
 
@@ -151,9 +149,9 @@ def Train_Model(vae, es, matrix, sets_training, retraining, dataset, sequence_le
 
         es = EarlyStopping(patience=10, verbose=1, min_delta=0.001,
                            monitor='loss', mode='auto', restore_best_weights=True)
-        vae, enc, dec = get_model()
+        vae, enc, dec = get_model(sequence_length)
 
-        vae.load_weights(f"trained_models/vae-{dataset}.h5")
+        vae.load_weights(f"trained_models/vae-{dataset}_{sequence_length-1}_{epochs}.h5")
 
         return vae, enc, dec, es
 
@@ -164,16 +162,12 @@ def Train_Model(vae, es, matrix, sets_training, retraining, dataset, sequence_le
             a_full.append(np.append([0], matrix[i][:-1]))  # One shifted
         d = {'traffic_volume_past': a_full}
         X = pd.DataFrame(data=d)
-        print(len(X['traffic_volume_past']))
-        print(len(X['traffic_volume_past'].iloc[0]))
 
         b_full = []
         for i in range(matrix.shape[0]):
             b_full.append(matrix[i])  # One shifted
         d = {'traffic_volume': b_full}
         Y = pd.DataFrame(data=d)
-        print(len(Y['traffic_volume']))
-        print(len(Y.iloc[0]['traffic_volume']))
 
         ### GENERATE 3D SEQUENCES ###
 
@@ -201,12 +195,8 @@ def Train_Model(vae, es, matrix, sets_training, retraining, dataset, sequence_le
         sequence_target = sequence_target.reshape(
             sequence_target.shape[0], sequence_target.shape[1], 1)
 
-        print(sequence_input.shape, sequence_target.shape)
-
         sequence_input, sequence_target_drop = drop_fill_pieces(
             sequence_input, sequence_target)
-
-        print(sequence_input.shape, sequence_target_drop.shape)
 
         sequence_input_train = sequence_input[:]
 
@@ -229,11 +219,11 @@ def Train_Model(vae, es, matrix, sets_training, retraining, dataset, sequence_le
 
         es = EarlyStopping(patience=10, verbose=1, min_delta=0.001,
                            monitor='loss', mode='auto', restore_best_weights=True)
-        vae, enc, dec = get_model()
+        vae, enc, dec = get_model(sequence_length)
         vae.fit([sequence_input_train[:, :, 0]] + [sequence_target_drop_train, sequence_target_train],
                 epochs=epochs, shuffle=False, callbacks=[es])
 
-        vae.save_weights(f"trained_models/vae-{dataset}.h5")
+        vae.save_weights(f"trained_models/vae-{dataset}_{sequence_length-1}_{epochs}.h5")
 
         return vae, enc, dec, es
 
@@ -245,16 +235,12 @@ def Test_Model(vae, matrix, sets_testing, sequence_length):
         a_full.append(np.append([0], matrix[i][:-1]))  # One shifted
     d = {'traffic_volume_past': a_full}
     X = pd.DataFrame(data=d)
-    print(len(X['traffic_volume_past']))
-    print(len(X['traffic_volume_past'].iloc[0]))
 
     b_full = []
     for i in range(matrix.shape[0]):
         b_full.append(matrix[i])  # One shifted
     d = {'traffic_volume': b_full}
     Y = pd.DataFrame(data=d)
-    print(len(Y['traffic_volume']))
-    print(len(Y.iloc[0]['traffic_volume']))
 
     sequence_input = []
     sequence_target = []
@@ -278,12 +264,8 @@ def Test_Model(vae, matrix, sets_testing, sequence_length):
     sequence_target = sequence_target.reshape(
         sequence_target.shape[0], sequence_target.shape[1], 1)
 
-    print(sequence_input.shape, sequence_target.shape)
-
     sequence_input, sequence_target_drop = drop_fill_pieces(
         sequence_input, sequence_target)
-
-    print(sequence_input.shape, sequence_target_drop.shape)
 
     sequence_input_test = sequence_input[:]
 
@@ -309,14 +291,19 @@ def Test_Model(vae, matrix, sets_testing, sequence_length):
         vae.predict([sequence_input_test[:, :, 0]] + [sequence_target_drop_test]))
 
     dif_vae = []
+    labels_full = []
+    pred = []
 
     for i in range(reconstruc_test.shape[0]):
         seq = np.copy(sequence_target_test[i])
         seq[seq == mask_value] = np.nan
         seq = scaler_target.inverse_transform(seq)
 
-        dif_vae.append(np.absolute(seq[40]-reconstruc_test[i][40]))
+        dif_vae.append(np.absolute(seq[sequence_length-1]-reconstruc_test[i][sequence_length-1]))
+        labels_full.append(seq[sequence_length-1])
+        pred.append(reconstruc_test[i][sequence_length-1])
 
-    print(len(dif_vae))
+    print(
+            f"Testing root mean squared error of testing {(mean_squared_error(labels_full, pred, squared=False)):.3f}")
 
     return vae, dif_vae
