@@ -3,6 +3,7 @@ import sys
 import argparse
 import random
 import numpy as np
+import pandas as pd
 from Stuff.DatasetLoader import DatasetLoader
 from Stuff.Initializer import Initializer
 
@@ -19,7 +20,7 @@ def parse_option():
                         help='learning rate gradient for the model')
     
     parser.add_argument('--hd_encoder', type=str, default='nonlinear',
-                        choices=['nonlinear', 'time_encoding', 'bind_timeseries'],
+                        choices=['nonlinear', 'time_encoding', 'bind_timeseries', 'linear'],
                         help='the type of hd encoding function to use')
     
     parser.add_argument('--clustering', type=str, default='none',
@@ -38,12 +39,12 @@ def parse_option():
                         help='Dataset to initialize')
     
     parser.add_argument('--num_timestamp', type=int, default=15, 
-                        help='Number of timestamps used for training and testing over all the timeseries')
+                        help='Number of timestamps in each rolling window used for training and testing over all the timeseries')
     
     parser.add_argument('--trial', type=int, default=0,
                         help='id for recording multiple runs')
     
-    parser.add_argument('--model', type=str, default='VAE',  # CHAAAAANGE
+    parser.add_argument('--model', type=str, default='RegHD', 
                         choices=['RegHD', 'VAE', 'DNN'],
                         help='Model to test')
     
@@ -53,8 +54,12 @@ def parse_option():
     parser.add_argument('--levels', type=int, default=6, 
                         help='Number of levels to divide encoding when using a different hd-encoder')
     
-    parser.add_argument('--retraining', type=bool, default=True, # CHANGEEEE
+    parser.add_argument('--retraining', type=bool, default=False,
                         help='If the model with this particular data, has been previously trained, set retraining = True')
+    
+    parser.add_argument('--add_weights', type=str, default='false', 
+                        choices=['false', 'Yule Walker', 'Kalman Filter'],
+                        help='If adding weights, choose method')
     
     opt = parser.parse_args()
 
@@ -76,14 +81,27 @@ def main():
 
     matrix_1_original = dl.dataset_load_and_preprocess("original")
     matrix_1_norm = dl.dataset_load_and_preprocess("normalized")
-    sets = np.random.choice(matrix_1_norm.shape[1]-40, opt.num_timestamp, replace=False)
-    sets_training, sets_testing = sets[:int(len(sets)*.8)], sets[int(len(sets)*.8):]
+    #sets = np.random.choice(matrix_1_norm.shape[1]-40, opt.num_timestamp, replace=False)
+    #sets_training, sets_testing = sets[:int(len(sets)*.8)], sets[int(len(sets)*.8):]
+    sets_training = [i for i in range(int((matrix_1_norm.shape[1]-opt.size_of_sample)*0.8))]
+    sets_testing = [i for i in range(int((matrix_1_norm.shape[1]-opt.size_of_sample)*0.8), (matrix_1_norm.shape[1]-opt.size_of_sample))]
 
     if opt.model == "RegHD":
         from models.RegHD.RegHD import Return_Model
-        model = Return_Model(opt.size_of_sample, opt.dimension_hd, opt.models, opt)
+        model = Return_Model(opt.size_of_sample, opt.dimension_hd, opt.models, matrix_1_norm.shape[0], opt)
         model.train(sets_training, matrix_1_norm, opt.epochs)
-        model.test(sets_testing, matrix_1_norm)
+        #y, label = model.test2(sets_testing[0], matrix_1_norm, len(sets_testing))
+        y, label = model.test(sets_testing, matrix_1_norm)
+
+        # Save results
+
+        """ for i in range(matrix_1_norm.shape[0]):
+            result_dict = []
+
+            for n in range(label.shape[1]):
+                result_dict.append({'timestamp': sets_testing[0] + n, 'pred': y[i, n+opt.size_of_sample], 'label':label[i, n]})
+            df = pd.DataFrame.from_dict(result_dict) 
+            df.to_csv (f'results/SanFranciscoTraffic/time_series_{i}.csv', index=False, header=True) """
 
     if opt.model == "DNN":
         from models.DNN.DNN import Return_Model, Train_Model, Test_Model
