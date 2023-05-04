@@ -6,11 +6,12 @@ import numpy as np
 import pandas as pd
 from Stuff.DatasetLoader import DatasetLoader
 from Stuff.Initializer import Initializer
+import matplotlib.pyplot as plt
 
 def parse_option():
     parser = argparse.ArgumentParser('argument for training')
 
-    parser.add_argument('--print_freq', type=int, default=10,
+    parser.add_argument('--print_freq', type=int, default=100,
                         help='print frequency')
     
     parser.add_argument('--epochs', type=int, default=1,
@@ -48,7 +49,7 @@ def parse_option():
                         choices=['RegHD', 'VAE', 'DNN'],
                         help='Model to test')
     
-    parser.add_argument('--size_of_sample', type=int, default=20, 
+    parser.add_argument('--size_of_sample', type=int, default=10, 
                         help='Number of previous samples before forecasting')
     
     parser.add_argument('--levels', type=int, default=6, 
@@ -57,7 +58,7 @@ def parse_option():
     parser.add_argument('--retraining', type=bool, default=False,
                         help='If the model with this particular data, has been previously trained, set retraining = True')
     
-    parser.add_argument('--add_weights', type=str, default='false', 
+    parser.add_argument('--add_weights', type=str, default='Kalman Filter', 
                         choices=['false', 'Yule Walker', 'Kalman Filter'],
                         help='If adding weights, choose method')
     
@@ -83,25 +84,40 @@ def main():
     matrix_1_norm = dl.dataset_load_and_preprocess("normalized")
     #sets = np.random.choice(matrix_1_norm.shape[1]-40, opt.num_timestamp, replace=False)
     #sets_training, sets_testing = sets[:int(len(sets)*.8)], sets[int(len(sets)*.8):]
-    sets_training = [i for i in range(int((matrix_1_norm.shape[1]-opt.size_of_sample)*0.8))]
-    sets_testing = [i for i in range(int((matrix_1_norm.shape[1]-opt.size_of_sample)*0.8), (matrix_1_norm.shape[1]-opt.size_of_sample))]
+    sets_training = [i for i in range(int((matrix_1_norm.shape[1]-opt.size_of_sample)*0.6))]
+    sets_testing = [i for i in range(int((matrix_1_norm.shape[1]-opt.size_of_sample)*0.6), (matrix_1_norm.shape[1]-opt.size_of_sample))]
 
     if opt.model == "RegHD":
         from models.RegHD.RegHD import Return_Model
         model = Return_Model(opt.size_of_sample, opt.dimension_hd, opt.models, matrix_1_norm.shape[0], opt)
-        model.train(sets_training, matrix_1_norm, opt.epochs)
+        y = np.zeros((matrix_1_norm.shape))
+        model.train(sets_training, matrix_1_norm, y, opt.epochs)
         #y, label = model.test2(sets_testing[0], matrix_1_norm, len(sets_testing))
-        y, label = model.test(sets_testing, matrix_1_norm)
+        model.test(sets_testing, matrix_1_norm, y)
 
         # Save results
 
-        """ for i in range(matrix_1_norm.shape[0]):
-            result_dict = []
+        x = [i+opt.size_of_sample for i in sets_training]
+        x_2 = [i+opt.size_of_sample for i in sets_testing]
+
+        print(x[-1], x_2[0])
+
+        for i in range(matrix_1_norm.shape[0]):
+            """ result_dict = []
 
             for n in range(label.shape[1]):
                 result_dict.append({'timestamp': sets_testing[0] + n, 'pred': y[i, n+opt.size_of_sample], 'label':label[i, n]})
             df = pd.DataFrame.from_dict(result_dict) 
-            df.to_csv (f'results/SanFranciscoTraffic/time_series_{i}.csv', index=False, header=True) """
+            df.to_csv (f'results/SanFranciscoTraffic_csv/time_series_{i}.csv', index=False, header=True) """
+
+            plt.plot(x, y[i, x[0]:x[-1]+1], 'b')
+            plt.plot(x_2, y[i, x_2[0]:x_2[-1]+1], 'r')
+            plt.plot(x+x_2, matrix_1_norm[i, x[0]:x_2[-1]+1], "k")
+            plt.title('Predictions')
+            plt.xlabel('Timestamp')
+            plt.ylabel('Prediction')
+            plt.savefig(f'results/SanFranciscoTraffic_img/Kalman Filter3/d = 1000/time_series_{i}.png')
+            plt.clf()
 
     if opt.model == "DNN":
         from models.DNN.DNN import Return_Model, Train_Model, Test_Model
