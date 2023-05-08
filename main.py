@@ -39,8 +39,8 @@ def parse_option():
                                  'GuangzhouTraffic', 'EnergyConsumptionFraunhofer', 'ElectricityLoadDiagrams'],
                         help='Dataset to initialize')
     
-    parser.add_argument('--num_timestamp', type=int, default=15, 
-                        help='Number of timestamps in each rolling window used for training and testing over all the timeseries')
+    #parser.add_argument('--num_timestamp', type=int, default=15, 
+                        #help='Number of timestamps in each rolling window used for training and testing over all the timeseries')
     
     parser.add_argument('--trial', type=int, default=0,
                         help='id for recording multiple runs')
@@ -49,7 +49,7 @@ def parse_option():
                         choices=['RegHD', 'VAE', 'DNN'],
                         help='Model to test')
     
-    parser.add_argument('--size_of_sample', type=int, default=10, 
+    parser.add_argument('--size_of_sample', type=int, default=20, 
                         help='Number of previous samples before forecasting')
     
     parser.add_argument('--levels', type=int, default=6, 
@@ -84,16 +84,49 @@ def main():
     matrix_1_norm = dl.dataset_load_and_preprocess("normalized")
     #sets = np.random.choice(matrix_1_norm.shape[1]-40, opt.num_timestamp, replace=False)
     #sets_training, sets_testing = sets[:int(len(sets)*.8)], sets[int(len(sets)*.8):]
-    sets_training = [i for i in range(int((matrix_1_norm.shape[1]-opt.size_of_sample)*0.6))]
-    sets_testing = [i for i in range(int((matrix_1_norm.shape[1]-opt.size_of_sample)*0.6), (matrix_1_norm.shape[1]-opt.size_of_sample))]
+    sets_training = [i for i in range(int((matrix_1_norm.shape[1]-opt.size_of_sample)*0.7))]
+    print(len(sets_training))
+    sets_testing = [i for i in range(int((matrix_1_norm.shape[1]-opt.size_of_sample)*0.7), int((matrix_1_norm.shape[1]-opt.size_of_sample)*0.9))]
+    sets_cv = [i for i in range(int((matrix_1_norm.shape[1]-opt.size_of_sample)*0.9), (matrix_1_norm.shape[1]-opt.size_of_sample))]
 
-    if opt.model == "RegHD":
+    if opt.add_weights == "Kalman Filter":
+        from models.RegHD.RegHD_AR import Return_Model
+        model = Return_Model(opt.size_of_sample, opt.dimension_hd, opt.models, matrix_1_norm.shape[0], opt)
+        y = np.zeros((matrix_1_norm.shape))
+        model.train(sets_training, matrix_1_norm, y, opt.epochs, sets_cv)
+        #y, label = model.test2(sets_testing[0], matrix_1_norm, len(sets_testing))
+        model.test(sets_testing, matrix_1_norm, y, cv=False)
+
+        x = [i+opt.size_of_sample for i in sets_training]
+        x_2 = [i+opt.size_of_sample for i in sets_testing]
+
+        print(x[-1], x_2[0])
+
+        for i in range(matrix_1_norm.shape[0]):
+            """ result_dict = []
+
+            for n in range(label.shape[1]):
+                result_dict.append({'timestamp': sets_testing[0] + n, 'pred': y[i, n+opt.size_of_sample], 'label':label[i, n]})
+            df = pd.DataFrame.from_dict(result_dict) 
+            df.to_csv (f'results/SanFranciscoTraffic_csv/time_series_{i}.csv', index=False, header=True) """
+
+            plt.plot(x, y[i, x[0]:x[-1]+1], 'b')
+            plt.plot(x_2, y[i, x_2[0]:x_2[-1]+1], 'r')
+            plt.plot(x+x_2, matrix_1_norm[i, x[0]:x_2[-1]+1], "k")
+            plt.title('Predictions')
+            plt.xlabel('Timestamp')
+            plt.ylabel('Prediction')
+            plt.savefig(f'results/SanFranciscoTraffic_img/RegHD_AR_3/time_series_{i}.png')
+            plt.clf()
+
+
+    elif opt.model == "RegHD":
         from models.RegHD.RegHD import Return_Model
         model = Return_Model(opt.size_of_sample, opt.dimension_hd, opt.models, matrix_1_norm.shape[0], opt)
         y = np.zeros((matrix_1_norm.shape))
-        model.train(sets_training, matrix_1_norm, y, opt.epochs)
+        model.train(sets_training, matrix_1_norm, y, opt.epochs, sets_cv)
         #y, label = model.test2(sets_testing[0], matrix_1_norm, len(sets_testing))
-        model.test(sets_testing, matrix_1_norm, y)
+        model.test(sets_testing, matrix_1_norm, y, cv=False)
 
         # Save results
 
@@ -116,7 +149,7 @@ def main():
             plt.title('Predictions')
             plt.xlabel('Timestamp')
             plt.ylabel('Prediction')
-            plt.savefig(f'results/SanFranciscoTraffic_img/Kalman Filter3/d = 1000/time_series_{i}.png')
+            plt.savefig(f'results/SanFranciscoTraffic_img/AR/time_series_{i}.png')
             plt.clf()
 
     if opt.model == "DNN":
