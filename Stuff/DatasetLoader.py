@@ -90,7 +90,7 @@ class DatasetLoader(object):
 
         elif self._dataset_name == 'EnergyConsumptionFraunhofer':
 
-            self._dataset_path = 'preprocessed_data/EnergyConsumptionFraunhofer/electrFraunhofer.csv'
+            self._dataset_path = 'preprocessed_data/EnergyConsumptionFraunhofer/electrFraunhofer_daily.csv'
 
             df = pd.read_csv(self._dataset_path)
 

@@ -40,10 +40,7 @@ class RegHD(nn.Module):
         #self.M = torch.zeros(models, d).float() # Model initializes in 0
         self.M = torch.zeros(d).float()
         self.opt = kwargs['opt']
-        if self.opt.add_weights == 'false':
-            self.project = embeddings.Projection(self.size, d, dtype=torch.float64) # 5 features, 10000 dimensions = hypervectors like weights?
-        else:
-            self.project = embeddings.Projection(1, d, dtype=torch.float64) # 5 features, 10000 dimensions = hypervectors like weights?
+        self.project = embeddings.Projection(self.size, d, dtype=torch.float64) # 5 features, 10000 dimensions = hypervectors like weights?
         #self.project = embeddings.Projection(1, d).float()
         self.project.weight.data.normal_(0, 1) # Normal distributions mean=0.0, std=1.0
         self.bias = nn.parameter.Parameter(torch.empty(d), requires_grad=False)
@@ -54,17 +51,7 @@ class RegHD(nn.Module):
     def encode(self, x, **kwargs): # encoding a single value TENSOR
         enc = self.project(x)
         enc = torch.cos(enc + self.bias) * torch.sin(enc) 
-        if self.opt.add_weights == 'false':
-            #for i in range(len(x)):
-             #   x[i] = (x[i])
-            return functional.hard_quantize(enc)
-        else:
-            #x_2 = torch.empty((self.size, 1), dtype=torch.float32)
-            #for i in range(len(x)):
-             #   x_2[i] = float(x[i])
-            #if self.opt.add_weights == 'Kalman Filter':
-            sample_hv = self.alpha[kwargs['ts']] * torch.transpose(enc, 0, 1)
-            return functional.hard_quantize(multiset(torch.transpose(sample_hv, 0, 1))), enc
+        return functional.hard_quantize(enc)
     
     def model_update(self, x, y, **kwargs): # update # y = no hv
         model_result, enc = self(x, ts = kwargs['ts'])
@@ -77,81 +64,62 @@ class RegHD(nn.Module):
         #return center
     
     def forward(self, x, **kwargs): # With weights x: array of values
-        if self.opt.add_weights != 'false':
-            #x = torch.tensor(x * self.alpha[kwargs['ts']])
-            x = torch.tensor(x.reshape((self.size, 1)), dtype = torch.float32)
-            enc, hvs = self.encode(x, ts = kwargs['ts'])
-            enc = torch.reshape(enc, (1, self.d))
+        #x = torch.tensor(x * self.alpha[kwargs['ts']])
+        x = torch.tensor(x.reshape((self.size, 1)), dtype = torch.float32)
+        enc, hvs = self.encode(x, ts = kwargs['ts'])
+        enc = torch.reshape(enc, (1, self.d))
 
-            model_result = F.linear(enc.type(torch.FloatTensor), self.M.type(torch.FloatTensor))
-            return model_result, enc, hvs
-        else:
-            x = torch.tensor(x).type(torch.DoubleTensor)
-            enc = torch.reshape(self.encode(x), (1, self.d))
+        model_result = F.linear(enc.type(torch.FloatTensor), self.M.type(torch.FloatTensor))
+        return model_result, enc, hvs
         #confidence = np.transpose(softmax(cos_similarity(self.cluster, enc))) # Compare input with cluster
         model_result = F.linear(enc.type(torch.FloatTensor), self.M.type(torch.FloatTensor))
         #res = F.linear(confidence, model_result) # Multiply enc (x) * weights (Model) = Dot product
         #return res[0].clone().detach(), enc, hvs # Return the resolutions
         return model_result, enc
 
-    def train(self, sets_training, matrix_1_norm, y, epochs, sets_cv):
+    def train(self, sets_training, matrix_1_norm, matrix_1_norm_org, y, epochs, sets_cv):
 
         for _ in range(epochs): # Number of iterations for all the samples
-            #pred = []
-            #labels_full = []
             
             for n in tqdm(range(matrix_1_norm.shape[0])):
                 samples = matrix_1_norm[n, :]
-                #labels = matrix_1_norm[n, :]
             
                 for i in (sets_training):
-
-                    #samples = matrix_1_norm[:, i:i+self.size]
-                    #labels = matrix_1_norm[:, i+self.size]
-                
-                    label = torch.tensor(samples[i+self.size])
+                    
                     sample = samples[i:i+self.size]
-
-                    if self.opt.add_weights == 'false' or self.opt.add_weights == 'Kalman Filter':
-                        self.model_update(sample, label, ts = n) # Pass input and label to train
-                        predictions_testing, enc = self(sample, ts = n)
-                    elif self.opt.add_weights == 'Yule Walker':
-                        self.model_update(sample, label, ts = n, samples_until_pred = matrix_1_norm[n, :i+self.size+1])
-                        predictions_testing, enc, hvs = self(sample, ts = n) # Pass samples from test to model (forward function)
+                    label = torch.tensor(samples[i+self.size])
+                    self.model_update(sample, label, ts = n) # Pass input and label to train
+                    predictions_testing, enc = self(sample, ts = n)
                     #pred.append(float(predictions_testing))
                     y[n, i+self.size] = float(predictions_testing)
                     #labels_full.append(float(label.unsqueeze(dim=0)))
                 
                 if (n % self.opt.print_freq == 0):
-                    pred, labels_full = self.test(sets_cv, matrix_1_norm, y)
+                    pred, labels_full = self.test(sets_cv, matrix_1_norm, matrix_1_norm_org, y)
                     print(f"Cross Validation root mean squared error of {(mean_squared_error(labels_full, pred, squared=False)):.3f}")
-                    #pred = []
-                    #labels_full = []
-
-            #print(f"Final training root mean squared error of {(mean_squared_error(labels_full, pred, squared=False)):.3f}")
-        #return pred, labels_full
-
     
-    def test(self, sets_testing, matrix_1_norm, y, cv = True):
+    def test(self, sets_testing, matrix_1_norm, matrix_1_norm_org, y, cv = True):
         pred = []
         labels_full = []
         for i in (sets_testing):
-            samples = matrix_1_norm[:, i:i+self.size]
+            samples = matrix_1_norm_org[:, i:i+self.size]
             labels = matrix_1_norm[:, i+self.size]
             for n in range(samples.shape[0]):
-                label = torch.tensor(labels[n])
                 sample = samples[n, :]
-                # Pass samples from test to model (forward function)
-                if (self.opt.add_weights == 'Kalman Filter'):
-                    predictions, enc, hvs = self(sample, ts = n)
-                else:
+                if(np.isnan(labels[n])):
                     predictions, enc = self(sample, ts = n)
+                    matrix_1_norm[n, i+self.size] = predictions
+                label = torch.tensor(labels[n])
+                # Pass samples from test to model (forward function)
+                predictions, enc = self(sample, ts = n)
                 pred.append(float(predictions))
                 y[n, i+self.size] = float(predictions)
-                labels_full.append(float(label.unsqueeze(dim=0)))
+                labels_full.append(matrix_1_norm_org[n, i+self.size])
         if (not cv):
+            error = mean_squared_error(labels_full, pred, squared=False)
             print(
-            f"Testing root mean squared error of testing {(mean_squared_error(labels_full, pred, squared=False)):.3f}")
+            f"Testing root mean squared error of testing {(error):.3f}")
+            return error
         
         return pred, labels_full
     
