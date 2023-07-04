@@ -22,7 +22,11 @@ def parse_option():
     parser.add_argument('--learning_rate', type=float, default=0.015,
                         help='learning rate gradient for the model')
     
-    parser.add_argument('--hd_representation', type=int, default=2,
+    parser.add_argument('--hd_encoder', type=str, default='nonlinear',
+                        choices=['nonlinear', 'time_encoding', 'bind_timeseries', 'linear'],
+                        help='the type of hd encoding function to use')
+    
+    parser.add_argument('--hd_representation', type=int, default=1,
                         help='Number of bits to use for the hypervector representation')
     
     parser.add_argument('--clustering', type=str, default='none',
@@ -35,18 +39,15 @@ def parse_option():
     parser.add_argument('--dimension_hd', type=int, default=1000,
                         help='number of dimensions in the hypervector')
     
-    parser.add_argument('--dataset', type=str, default='EnergyConsumptionFraunhofer', 
+    parser.add_argument('--dataset', type=str, default='SanFranciscoTraffic', 
                         choices=['SanFranciscoTraffic', 'MetroInterstateTrafficVolume', 
                                  'GuangzhouTraffic', 'EnergyConsumptionFraunhofer', 'ElectricityLoadDiagrams'],
                         help='Dataset to initialize')
     
-    #parser.add_argument('--num_timestamp', type=int, default=15, 
-                        #help='Number of timestamps in each rolling window used for training and testing over all the timeseries')
-    
     parser.add_argument('--trial', type=int, default=0,
                         help='id for recording multiple runs')
     
-    parser.add_argument('--model', type=str, default='RegHD', 
+    parser.add_argument('--model', type=str, default='ARHD', 
                         choices=['RegHD', 'VAE', 'DNN', 'KalmanFilter', 'ARHD'],
                         help='Model to test')
     
@@ -54,7 +55,7 @@ def parse_option():
                         help='Number of previous samples before forecasting')
     
     parser.add_argument('--levels', type=int, default=6, 
-                        help='Number of levels to divide encoding when using a different hd-encoder')
+                        help='Number of levels to divide encoding when using a linear hd-encoder')
     
     parser.add_argument('--retraining', type=bool, default=False,
                         help='If the model with this particular data, has been previously trained, set retraining = True')
@@ -159,22 +160,17 @@ def main():
        vae, enc, dec, es = Train_Model(vae, es, matrix_1_norm, sets_training, opt.retraining, opt.dataset, opt.size_of_sample + 1, opt.epochs)
        vae, dif_vae = Test_Model(vae, matrix_1_norm, sets_testing, opt.size_of_sample + 1)  
 
-    add_value_to_csv(csv_file, opt.dataset, opt.add_weights, opt.p, error)
+    add_value_to_csv(csv_file, opt.dataset, opt.model, 'None', 0, opt.learning_rate, opt.hd_representation, error)
 
     # Save results
 
-    x = [i+opt.size_of_sample for i in sets_training]
+    """x = [i+opt.size_of_sample for i in sets_training]
     x_2 = [i+opt.size_of_sample for i in sets_testing]
 
     print(x[-1], x_2[0])
 
     for i in range(matrix_1_norm.shape[0]):
         result_dict = []
-
-        """for n in range(label.shape[1]):
-            result_dict.append({'timestamp': sets_testing[0] + n, 'pred': y[i, n+opt.size_of_sample], 'label':label[i, n]})
-        df = pd.DataFrame.from_dict(result_dict) 
-        df.to_csv (f'results/SanFranciscoTraffic_csv/time_series_{i}.csv', index=False, header=True)"""
 
         plt.plot(x, y[i, x[0]:x[-1]+1], 'b')
         plt.plot(x_2, y[i, x_2[0]:x_2[-1]+1], 'r')
@@ -186,9 +182,9 @@ def main():
         plt.xlabel('Timestamp')
         plt.ylabel('Prediction')
         plt.savefig(f'results2/EnergyConsumptionFraunhofer/AR_Debug/time_series_{i}.png')
-        plt.clf() 
+        plt.clf()""" 
 
-def add_value_to_csv(csv_file, ts, model, noise, mae):
+def add_value_to_csv(csv_file, ts, model, noise, noiseVol, lr, hd_bites, mae):
     # Check if the CSV file exists
     try:
         with open(csv_file, 'r') as file:
@@ -197,10 +193,10 @@ def add_value_to_csv(csv_file, ts, model, noise, mae):
             data = list(reader)
     except FileNotFoundError:
         # If the file doesn't exist, create a new one with the header
-        data = [['TimeSeries Dataset', 'Model', 'Noise', 'MAE']]
+        data = [['TimeSeries Dataset', 'Model', 'NoiseType', 'NoiseVol', 'Lr', 'hd_bites', 'MAE']]
     
     # Add the value to the data
-    data.append([ts, model, noise, mae])
+    data.append([ts, model, noise, noiseVol, lr, hd_bites, mae])
     
     # Write the updated data back to the CSV file
     with open(csv_file, 'w', newline='') as file:

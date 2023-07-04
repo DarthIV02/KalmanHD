@@ -49,7 +49,7 @@ class RegHD(nn.Module):
         self.kwargs = kwargs
 
     def encode(self, x, **kwargs): # encoding a single value TENSOR
-        enc = self.project(x)
+        enc = self.project(torch.reshape(x, (1, self.size)))
         enc = torch.cos(enc + self.bias) * torch.sin(enc) 
         return functional.hard_quantize(enc)
     
@@ -386,7 +386,7 @@ def Return_Model(size, d, models, number_ts, opt):
         elif(opt.hd_encoder == "linear"):
             model_hd.encode = types.MethodType(linear_encoding, model_hd)
     
-    if (opt.add_weights != "false"):
+    """if (opt.add_weights != "false"):
         model_hd.alpha = {}
         for i in range(number_ts):
             #model_hd.alpha[i] = np.random.rand(size)
@@ -398,6 +398,6 @@ def Return_Model(size, d, models, number_ts, opt):
             for i in range(number_ts):
                 model_hd.covarianceMatrix[i] = np.identity(size)*np.random.randint(100, 200)
             model_hd.mse = torchmetrics.MeanSquaredError()
-            model_hd.model_update = types.MethodType(KalmanFilterUpdate3, model_hd)
+            model_hd.model_update = types.MethodType(KalmanFilterUpdate3, model_hd)"""
 
     return model_hd

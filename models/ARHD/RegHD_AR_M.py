@@ -83,12 +83,16 @@ class RegHD_AR(nn.Module):
         self.var = 0
         self.current_ts = None
 
-
+    def hard_quantize(self, hv):
+        hv = (hv+self.size)/((self.size)*(2**(1-self.opt.hd_representation)))
+        hv = torch.floor(hv)
+        return hv
+    
     def encode(self, x, **kwargs): # encoding a single value TENSOR
         #x_2 = x * self.alpha[kwargs['ts']]
         enc = self.project(torch.reshape(x, (1, self.size)))
         enc = torch.cos(enc + self.bias) * torch.sin(enc) 
-        return functional.hard_quantize(multiset(torch.transpose(enc, 0, 1)))
+        return self.hard_quantize(multiset(torch.transpose(enc, 0, 1)))
         #return functional.hard_quantize(enc)
         #return multiset(enc)
 
