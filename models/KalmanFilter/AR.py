@@ -58,7 +58,6 @@ class RegHD_AR(nn.Module):
         x = torch.reshape(torch.tensor(x, dtype = torch.float32), (1, self.state_dim))
         const = torch.matmul(x, torch.matmul(self.covarianceMatrix[kwargs['ts']], torch.transpose(x, 0, 1)))
         if (float(const + torch.var(x)) >= 0.001 or float(const + torch.var(x)) <= -0.001):
-            print("update")
             G_t = torch.matmul(self.covarianceMatrix[kwargs['ts']], torch.transpose(x, 0, 1)) / (const + torch.var(x))
     
             A_t = y - model_result

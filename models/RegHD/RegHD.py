@@ -70,9 +70,6 @@ class RegHD(nn.Module):
         enc = torch.reshape(enc, (1, self.d))
 
         model_result = F.linear(enc.type(torch.FloatTensor), self.M.type(torch.FloatTensor))
-        return model_result, enc, hvs
-        #confidence = np.transpose(softmax(cos_similarity(self.cluster, enc))) # Compare input with cluster
-        model_result = F.linear(enc.type(torch.FloatTensor), self.M.type(torch.FloatTensor))
         #res = F.linear(confidence, model_result) # Multiply enc (x) * weights (Model) = Dot product
         #return res[0].clone().detach(), enc, hvs # Return the resolutions
         return model_result, enc
