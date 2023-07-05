@@ -66,7 +66,7 @@ class RegHD(nn.Module):
     def forward(self, x, **kwargs): # With weights x: array of values
         #x = torch.tensor(x * self.alpha[kwargs['ts']])
         x = torch.tensor(x.reshape((self.size, 1)), dtype = torch.float32)
-        enc, hvs = self.encode(x, ts = kwargs['ts'])
+        enc = self.encode(x, ts = kwargs['ts'])
         enc = torch.reshape(enc, (1, self.d))
 
         model_result = F.linear(enc.type(torch.FloatTensor), self.M.type(torch.FloatTensor))
