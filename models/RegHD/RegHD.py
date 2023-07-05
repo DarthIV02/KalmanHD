@@ -40,7 +40,7 @@ class RegHD(nn.Module):
         #self.M = torch.zeros(models, d).float() # Model initializes in 0
         self.M = torch.zeros(d).float()
         self.opt = kwargs['opt']
-        self.project = embeddings.Projection(self.size, d, dtype=torch.float64) # 5 features, 10000 dimensions = hypervectors like weights?
+        self.project = embeddings.Projection(self.size, d, dtype=torch.float32) # 5 features, 10000 dimensions = hypervectors like weights?
         #self.project = embeddings.Projection(1, d).float()
         self.project.weight.data.normal_(0, 1) # Normal distributions mean=0.0, std=1.0
         self.bias = nn.parameter.Parameter(torch.empty(d), requires_grad=False)
