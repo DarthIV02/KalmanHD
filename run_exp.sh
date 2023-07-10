@@ -1,4 +1,4 @@
-for dataset in SanFranciscoTraffic MetroInterstateTrafficVolume GuangzhouTraffic EnergyConsumptionFraunhofer ElectricityLoadDiagrams
+for dataset in SanFranciscoTraffic # MetroInterstateTrafficVolume GuangzhouTraffic EnergyConsumptionFraunhofer ElectricityLoadDiagrams
 do
     # python3 main.py --learning_rate 0.00001 --dimension_hd 10000 --model RegHD --dataset "$dataset";
 
@@ -10,16 +10,19 @@ do
         # do
         #     python3 main.py --dataset "$dataset" --learning_rate "$learning_rate" --hd_representation "$hd_representation"; 
         # done
-
-        if [ "$hd_representation" = 1 ]; then
+        
+        for dimension_hd in 500, 1000, 2000, 5000, 10000
+        do
+            if [ "$hd_representation" = 1 ]; then
             learning_rate=0.00001
-        elif [ "$hd_representation" = 2 ]; then
-            learning_rate=0.00001
-        elif [ "$hd_representation" = 4 ]; then
-            learning_rate=0.000001
-        fi
+            elif [ "$hd_representation" = 2 ]; then
+                learning_rate=0.00001
+            elif [ "$hd_representation" = 4 ]; then
+                learning_rate=0.000001
+            fi
 
-        python3 main.py --learning_rate "$learning_rate" --dimension_hd 10000 --model RegHD --dataset "$dataset" --hd_representation "$hd_representation";
-    
+            python3 main.py --learning_rate "$learning_rate" --dimension_hd "$dimension_hd" --model RegHD --dataset "$dataset" --hd_representation "$hd_representation";
+
+        done    
     done
 done
