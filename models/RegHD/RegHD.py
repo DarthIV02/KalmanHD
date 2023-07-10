@@ -48,10 +48,16 @@ class RegHD(nn.Module):
         #self.cluster = functional.random_hv(models, d) 
         self.kwargs = kwargs
 
+    def hard_quantize(self, hv):
+        hv = (hv+self.size)/((self.size)*(2**(1-self.opt.hd_representation)))
+        hv = torch.floor(hv)
+        return hv
+
     def encode(self, x, **kwargs): # encoding a single value TENSOR
         enc = self.project(torch.reshape(x, (1, self.size)))
         enc = torch.cos(enc + self.bias) * torch.sin(enc) 
-        return functional.hard_quantize(enc)
+        #return functional.hard_quantize(enc)
+        return self.hard_quantize(enc)
     
     def model_update(self, x, y, **kwargs): # update # y = no hv
         model_result, enc = self(x, ts = kwargs['ts'])
