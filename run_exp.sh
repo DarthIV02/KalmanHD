@@ -1,6 +1,6 @@
 for dataset in SanFranciscoTraffic MetroInterstateTrafficVolume GuangzhouTraffic EnergyConsumptionFraunhofer ElectricityLoadDiagrams
 do
-    python3 main.py --learning_rate 0.00001 --dimension_hd 10000 --model RegHD --dataset "$dataset";
+    # python3 main.py --learning_rate 0.00001 --dimension_hd 10000 --model RegHD --dataset "$dataset";
 
     # python3 main.py --model KalmanFilter --dataset "$dataset";
     
