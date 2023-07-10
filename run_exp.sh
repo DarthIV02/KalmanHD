@@ -11,7 +11,7 @@ do
         #     python3 main.py --dataset "$dataset" --learning_rate "$learning_rate" --hd_representation "$hd_representation"; 
         # done
         
-        for dimension_hd in 500, 1000, 2000, 5000, 10000
+        for dimension_hd in 500 1000 2000 5000 10000
         do
             if [ "$hd_representation" = 1 ]; then
             learning_rate=0.00001
