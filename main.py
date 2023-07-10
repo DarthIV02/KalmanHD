@@ -19,14 +19,14 @@ def parse_option():
     parser.add_argument('--epochs', type=int, default=1,
                         help='number of training epochs or number of passes on dataset')
     
-    parser.add_argument('--learning_rate', type=float, default=0.015,
+    parser.add_argument('--learning_rate', type=float, default=0.000001,
                         help='learning rate gradient for the model')
     
     parser.add_argument('--hd_encoder', type=str, default='nonlinear',
                         choices=['nonlinear', 'time_encoding', 'bind_timeseries', 'linear'],
                         help='the type of hd encoding function to use')
     
-    parser.add_argument('--hd_representation', type=int, default=1,
+    parser.add_argument('--hd_representation', type=int, default=4,
                         help='Number of bits to use for the hypervector representation')
     
     parser.add_argument('--clustering', type=str, default='none',
@@ -36,7 +36,7 @@ def parse_option():
     parser.add_argument('--models', type=int, default=1, 
                         help='When using clustering, the number of models to seperate the clustering')
     
-    parser.add_argument('--dimension_hd', type=int, default=1000,
+    parser.add_argument('--dimension_hd', type=int, default=10000,
                         help='number of dimensions in the hypervector')
     
     parser.add_argument('--dataset', type=str, default='SanFranciscoTraffic', 
@@ -47,7 +47,7 @@ def parse_option():
     parser.add_argument('--trial', type=int, default=0,
                         help='id for recording multiple runs')
     
-    parser.add_argument('--model', type=str, default='ARHD', 
+    parser.add_argument('--model', type=str, default='RegHD', 
                         choices=['RegHD', 'VAE', 'DNN', 'KalmanFilter', 'ARHD'],
                         help='Model to test')
     
