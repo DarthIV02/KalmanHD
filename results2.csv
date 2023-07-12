@@ -265,3 +265,8 @@ SanFranciscoTraffic,RegHD,Missing,0.0,1e-06,4,0.2639975984782052
 SanFranciscoTraffic,RegHD,Missing,0.0,1e-06,4,0.23734752254133681
 SanFranciscoTraffic,RegHD,Missing,0.0,1e-06,4,0.23766283355335807
 SanFranciscoTraffic,RegHD,Missing,0.0,1e-06,4,0.2565211992165176
+SanFranciscoTraffic,RegHD,Missing,0.0,1e-06,4,0.23703100761593482
+MetroInterstateTrafficVolume,RegHD,Missing,0.0,1e-05,2,0.1430916757447932
+GuangzhouTraffic,RegHD,Missing,0.0,1e-06,4,0.20168273024402392
+EnergyConsumptionFraunhofer,RegHD,Missing,0.0,1e-06,4,0.3040883940744597
+ElectricityLoadDiagrams,RegHD,Missing,0.0,1e-05,1,0.08480121579092084
