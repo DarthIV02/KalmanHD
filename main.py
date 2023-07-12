@@ -39,7 +39,7 @@ def parse_option():
     parser.add_argument('--dimension_hd', type=int, default=10000,
                         help='number of dimensions in the hypervector')
     
-    parser.add_argument('--dataset', type=str, default='SanFranciscoTraffic', 
+    parser.add_argument('--dataset', type=str, default='MetroInterstateTrafficVolume', 
                         choices=['SanFranciscoTraffic', 'MetroInterstateTrafficVolume', 
                                  'GuangzhouTraffic', 'EnergyConsumptionFraunhofer', 'ElectricityLoadDiagrams'],
                         help='Dataset to initialize')
@@ -160,7 +160,7 @@ def main():
        vae, enc, dec, es = Train_Model(vae, es, matrix_1_norm, sets_training, opt.retraining, opt.dataset, opt.size_of_sample + 1, opt.epochs)
        vae, dif_vae = Test_Model(vae, matrix_1_norm, sets_testing, opt.size_of_sample + 1)  
 
-    add_value_to_csv(csv_file, opt.dataset, opt.model, 'Missing', opt.p, opt.learning_rate, opt.hd_representation, error)
+    add_value_to_csv(csv_file, opt.dataset, opt.model, 'Gaussian', opt.gaussian_noise, opt.learning_rate, opt.hd_representation, error)
 
     # Save results
 
