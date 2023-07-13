@@ -24,7 +24,7 @@ do
             dimension_hd=5000
         fi
         
-        python3 main.py --model RegHD --dataset "$dataset" --learning_rate "$learning_rate" --hd_representation "$hd_representation" --p "$noise";
+        python3 main.py --model RegHD --dataset "$dataset" --learning_rate "$learning_rate" --hd_representation "$hd_representation" --dimension_hd "$dimension_hd" --p "$noise";
 
         # python3 main.py --model KalmanFilter --dataset "$dataset" --p "$noise";
         
