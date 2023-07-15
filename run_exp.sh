@@ -48,6 +48,10 @@ do
         dimension_hd=5000
     fi
     
-    python3 main.py --learning_rate "$learning_rate" --dimension_hd "$dimension_hd" --model RegHD --dataset "$dataset" --hd_representation "$hd_representation";
+    #python3 main.py --learning_rate "$learning_rate" --dimension_hd "$dimension_hd" --model RegHD --dataset "$dataset" --hd_representation "$hd_representation";
+
+    python3 main.py --model DNN --dataset "$dataset";
+
+    python3 main.py --model VAE --dataset "$dataset";
 
 done

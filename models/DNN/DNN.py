@@ -85,10 +85,10 @@ def Return_Model(size):
     return model_noise_resilience
 
 
-def Train_Model(model, matrix, sets_training, retraining, dataset, size, epochs):
+def Train_Model(model, matrix, sets_training, retraining, dataset, size, epochs, noise="None", level=0):
 
     if retraining:
-        model.load_weights(f"trained_models/dnn-{dataset}_{size}_{epochs}.h5")
+        model.load_weights(f"trained_models/dnn-{dataset}_{size}_{epochs}_{noise}_{level}.h5")
 
     else:
         # IF TRAINING FOR THE FIRST TIME
@@ -115,7 +115,7 @@ def Train_Model(model, matrix, sets_training, retraining, dataset, size, epochs)
 
         model.fit(X_train, Y_train, epochs=epochs, batch_size=128)
 
-        model.save_weights(f"trained_models/dnn-{dataset}_{size}_{epochs}.h5")
+        model.save_weights(f"trained_models/dnn-{dataset}_{size}_{epochs}_{noise}_{level}.h5")
 
     return model
 
@@ -140,7 +140,6 @@ def Test_Model(model, matrix, sets_testing, size):
                 labels_full.append(labels[n])
                 dif_dnn.append(np.absolute(labels[n]-predictions))
 
-    print(
-            f"Testing root mean squared error of testing {(mean_squared_error(labels_full, pred, squared=False)):.3f}")
-
-    return model, dif_dnn
+    error = mean_squared_error(labels_full, pred, squared=False)
+    print(f"Testing root mean squared error of testing {(error):.3f}")
+    return error

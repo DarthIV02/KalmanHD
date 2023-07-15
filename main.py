@@ -48,7 +48,7 @@ def parse_option():
                         help='id for recording multiple runs')
     
     parser.add_argument('--model', type=str, default='RegHD', 
-                        choices=['RegHD', 'VAE', 'DNN', 'KalmanFilter', 'ARHD'],
+                        choices=['RegHD', 'VAE', 'DNN', 'KalmanFilter', 'KalmanHD'],
                         help='Model to test')
     
     parser.add_argument('--size_of_sample', type=int, default=20, 
@@ -140,7 +140,7 @@ def main():
         #y, label = model.test2(sets_testing[0], matrix_1_norm, len(sets_testing))
         error = model.test(sets_testing, matrix_1_norm, matrix_1_norm_org, y, cv=False)
 
-    if opt.model == "ARHD":
+    if opt.model == "KalmanHD":
         from models.ARHD.RegHD_AR_M import Return_Model
         model = Return_Model(opt.size_of_sample, opt.dimension_hd, opt.models, matrix_1_norm.shape[0], opt)
         y = np.zeros((matrix_1_norm.shape))
@@ -152,15 +152,15 @@ def main():
         from models.DNN.DNN import Return_Model, Train_Model, Test_Model
         model = Return_Model(opt.size_of_sample)
         model = Train_Model(model, matrix_1_norm, sets_training, opt.retraining, opt.dataset, opt.size_of_sample, opt.epochs)
-        model, dif_dnn = Test_Model(model, matrix_1_norm, sets_testing, opt.size_of_sample)        
+        error = Test_Model(model, matrix_1_norm_org, sets_testing, opt.size_of_sample)        
 
     if opt.model == "VAE":
        from models.VAE.VAE import Return_Model, Train_Model, Test_Model
        vae, enc, dec, es = model = Return_Model(opt.size_of_sample + 1)
        vae, enc, dec, es = Train_Model(vae, es, matrix_1_norm, sets_training, opt.retraining, opt.dataset, opt.size_of_sample + 1, opt.epochs)
-       vae, dif_vae = Test_Model(vae, matrix_1_norm, sets_testing, opt.size_of_sample + 1)  
+       error = Test_Model(vae, matrix_1_norm_org, sets_testing, opt.size_of_sample + 1)  
 
-    add_value_to_csv(csv_file, opt.dataset, opt.model, 'Missing', opt.p, opt.learning_rate, opt.hd_representation, error)
+    add_value_to_csv(csv_file, opt.dataset, opt.model, 'None', opt.p, opt.learning_rate, opt.hd_representation, error)
 
     # Save results
 

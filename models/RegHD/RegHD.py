@@ -106,13 +106,13 @@ class RegHD(nn.Module):
         labels_full = []
         for i in (sets_testing):
             samples = matrix_1_norm_org[:, i:i+self.size]
-            labels = matrix_1_norm[:, i+self.size]
+            #labels = matrix_1_norm[:, i+self.size]
             for n in range(samples.shape[0]):
                 sample = samples[n, :]
-                if(np.isnan(labels[n])):
+                """if(np.isnan(labels[n])):
                     predictions, enc = self(sample, ts = n)
-                    matrix_1_norm[n, i+self.size] = predictions
-                label = torch.tensor(labels[n])
+                    matrix_1_norm[n, i+self.size] = predictions"""
+                #label = torch.tensor(labels[n])
                 # Pass samples from test to model (forward function)
                 predictions, enc = self(sample, ts = n)
                 pred.append(float(predictions))

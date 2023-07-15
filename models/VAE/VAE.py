@@ -143,7 +143,7 @@ def Return_Model(sequence_length):
     return vae, enc, dec, es
 
 
-def Train_Model(vae, es, matrix, sets_training, retraining, dataset, sequence_length, epochs):
+def Train_Model(vae, es, matrix, sets_training, retraining, dataset, sequence_length, epochs, noise="None", level=0):
 
     if retraining:
 
@@ -151,7 +151,7 @@ def Train_Model(vae, es, matrix, sets_training, retraining, dataset, sequence_le
                            monitor='loss', mode='auto', restore_best_weights=True)
         vae, enc, dec = get_model(sequence_length)
 
-        vae.load_weights(f"trained_models/vae-{dataset}_{sequence_length-1}_{epochs}.h5")
+        vae.load_weights(f"trained_models/vae-{dataset}_{sequence_length-1}_{epochs}_{noise}_{level}.h5")
 
         return vae, enc, dec, es
 
@@ -223,7 +223,7 @@ def Train_Model(vae, es, matrix, sets_training, retraining, dataset, sequence_le
         vae.fit([sequence_input_train[:, :, 0]] + [sequence_target_drop_train, sequence_target_train],
                 epochs=epochs, shuffle=False, callbacks=[es])
 
-        vae.save_weights(f"trained_models/vae-{dataset}_{sequence_length-1}_{epochs}.h5")
+        vae.save_weights(f"trained_models/vae-{dataset}_{sequence_length-1}_{epochs}_{noise}_{level}.h5")
 
         return vae, enc, dec, es
 
@@ -303,7 +303,6 @@ def Test_Model(vae, matrix, sets_testing, sequence_length):
         labels_full.append(seq[sequence_length-1])
         pred.append(reconstruc_test[i][sequence_length-1])
 
-    print(
-            f"Testing root mean squared error of testing {(mean_squared_error(labels_full, pred, squared=False)):.3f}")
-
-    return vae, dif_vae
+    error = mean_squared_error(labels_full, pred, squared=False)
+    print(f"Testing root mean squared error of testing {(error):.3f}")
+    return error
