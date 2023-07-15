@@ -160,7 +160,7 @@ def main():
        vae, enc, dec, es = Train_Model(vae, es, matrix_1_norm, sets_training, opt.retraining, opt.dataset, opt.size_of_sample + 1, opt.epochs)
        error = Test_Model(vae, matrix_1_norm_org, sets_testing, opt.size_of_sample + 1)  
 
-    add_value_to_csv(csv_file, opt.dataset, opt.model, 'None', opt.p, opt.learning_rate, opt.hd_representation, error)
+    add_value_to_csv(csv_file, opt.dataset, opt.model, 'Missing', opt.p, opt.learning_rate, opt.hd_representation, error)
 
     # Save results
 
