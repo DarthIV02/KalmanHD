@@ -271,3 +271,8 @@ MetroInterstateTrafficVolume,DNN,None,0.0,1e-06,4,0.2580410869566949
 GuangzhouTraffic,DNN,None,0.0,1e-06,4,0.05550662273536857
 EnergyConsumptionFraunhofer,DNN,None,0.0,1e-06,4,0.12945857207075157
 ElectricityLoadDiagrams,DNN,None,0.0,1e-06,4,0.14181777641982637
+SanFranciscoTraffic,VAE,None,0.0,1e-06,4,0.16453151971346805
+MetroInterstateTrafficVolume,VAE,None,0.0,1e-06,4,0.16177144533115473
+GuangzhouTraffic,VAE,None,0.0,1e-06,4,0.14341569362932344
+EnergyConsumptionFraunhofer,VAE,None,0.0,1e-06,4,0.13709484666835495
+ElectricityLoadDiagrams,VAE,None,0.0,1e-06,4,0.10553985785072797
