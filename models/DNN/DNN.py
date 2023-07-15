@@ -2,7 +2,7 @@ from keras.layers import Input, Dense, LSTM, multiply, concatenate, Activation, 
 from keras.layers import Dense, Dropout, Flatten, BatchNormalization, Input
 from keras.layers import Conv1D, BatchNormalization, GlobalAveragePooling1D, Permute, Dropout
 from keras.models import Sequential, Model
-from sktime_dl.utils.layer_utils import AttentionLSTM
+from Stuff.sktime_dl.utils.layer_utils import AttentionLSTM
 from sklearn.metrics import mean_squared_error
 
 import numpy as np
