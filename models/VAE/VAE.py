@@ -144,6 +144,10 @@ def Return_Model(sequence_length):
 
 
 def Train_Model(vae, es, matrix, sets_training, retraining, dataset, sequence_length, epochs, noise="None", level=0):
+    
+    gpu_devices = tf.config.experimental.list_physical_devices('GPU')
+    for device in gpu_devices:
+        tf.config.experimental.set_memory_growth(device, True)
 
     if retraining:
 
