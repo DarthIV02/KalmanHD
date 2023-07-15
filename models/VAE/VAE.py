@@ -145,9 +145,9 @@ def Return_Model(sequence_length):
 
 def Train_Model(vae, es, matrix, sets_training, retraining, dataset, sequence_length, epochs, noise="None", level=0):
     
-    gpu_devices = tf.config.experimental.list_physical_devices('GPU')
-    for device in gpu_devices:
-        tf.config.experimental.set_memory_growth(device, True)
+    #gpu_devices = tf.config.experimental.list_physical_devices('GPU')
+    #for device in gpu_devices:
+    #    tf.config.experimental.set_memory_growth(device, True)
 
     if retraining:
 
@@ -224,6 +224,7 @@ def Train_Model(vae, es, matrix, sets_training, retraining, dataset, sequence_le
         es = EarlyStopping(patience=10, verbose=1, min_delta=0.001,
                            monitor='loss', mode='auto', restore_best_weights=True)
         vae, enc, dec = get_model(sequence_length)
+        print([sequence_input_train[:, :, 0]] + [sequence_target_drop_train, sequence_target_train])
         vae.fit([sequence_input_train[:, :, 0]] + [sequence_target_drop_train, sequence_target_train],
                 epochs=epochs, shuffle=False, callbacks=[es])
 

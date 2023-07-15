@@ -47,7 +47,7 @@ def parse_option():
     parser.add_argument('--trial', type=int, default=0,
                         help='id for recording multiple runs')
     
-    parser.add_argument('--model', type=str, default='RegHD', 
+    parser.add_argument('--model', type=str, default='VAE', 
                         choices=['RegHD', 'VAE', 'DNN', 'KalmanFilter', 'KalmanHD'],
                         help='Model to test')
     
