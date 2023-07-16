@@ -73,7 +73,7 @@ class RegHD(nn.Module):
         #return self.hard_quantize(enc) <-- Original
         enc = self.hard_quantize(enc)
         if self.opt.flipping_rate > 0:
-            enc = self.flip_bits(enc)
+            enc = self.flip_bits(enc[0])
         return enc
     
     def model_update(self, x, y, **kwargs): # update # y = no hv
