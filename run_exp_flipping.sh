@@ -26,7 +26,7 @@ do
         
         python3 main.py --model RegHD --dataset "$dataset" --learning_rate "$learning_rate" --hd_representation "$hd_representation" --dimension_hd "$dimension_hd" --flipping_rate "$noise";
 
-        # python3 main.py --model KalmanFilter --dataset "$dataset" --gaussian_noise "$noise";
+        python3 main.py --model KalmanFilter --dataset "$dataset" --flipping_rate "$noise";
         
         if [ "$dataset" = "SanFranciscoTraffic" ]; then
             learning_rate=0.01
