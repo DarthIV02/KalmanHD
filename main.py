@@ -26,7 +26,7 @@ def parse_option():
                         choices=['nonlinear', 'time_encoding', 'bind_timeseries', 'linear'],
                         help='the type of hd encoding function to use')
     
-    parser.add_argument('--hd_representation', type=int, default=4,
+    parser.add_argument('--hd_representation', type=int, default=1,
                         help='Number of bits to use for the hypervector representation')
     
     parser.add_argument('--clustering', type=str, default='none',
@@ -36,7 +36,7 @@ def parse_option():
     parser.add_argument('--models', type=int, default=1, 
                         help='When using clustering, the number of models to seperate the clustering')
     
-    parser.add_argument('--dimension_hd', type=int, default=1000,
+    parser.add_argument('--dimension_hd', type=int, default=2000,
                         help='number of dimensions in the hypervector')
     
     parser.add_argument('--dataset', type=str, default='SanFranciscoTraffic', 
@@ -47,7 +47,7 @@ def parse_option():
     parser.add_argument('--trial', type=int, default=0,
                         help='id for recording multiple runs')
     
-    parser.add_argument('--model', type=str, default='KalmanHD', 
+    parser.add_argument('--model', type=str, default='DNN', 
                         choices=['RegHD', 'VAE', 'DNN', 'KalmanFilter', 'KalmanHD'],
                         help='Model to test')
     
@@ -157,8 +157,8 @@ def main():
     if opt.model == "VAE":
        from models.VAE.VAE import Return_Model, Train_Model, Test_Model
        vae, enc, dec, es = model = Return_Model(opt.size_of_sample + 1)
-       vae, enc, dec, es = Train_Model(vae, es, matrix_1_norm, sets_training, opt.retraining, opt.dataset, opt.size_of_sample + 1, opt.epochs)
-       error = Test_Model(vae, matrix_1_norm_org, sets_testing, opt.size_of_sample + 1)  
+       vae, enc, dec, es = Train_Model(vae, es, matrix_1_norm, sets_training, opt.retraining, opt.dataset, opt.size_of_sample + 1, opt.epochs, opt.flipping_rate)
+       error = Test_Model(vae, matrix_1_norm_org, sets_testing, opt.size_of_sample + 1, opt.flipping_rate)  
 
     add_value_to_csv(csv_file, opt.dataset, opt.model, 'Flipping', opt.flipping_rate, opt.learning_rate, opt.hd_representation, error)
 
