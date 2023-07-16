@@ -45,7 +45,7 @@ do
             hd_representation=1
         fi
 
-        python3 main.py --model KalmanHD --dataset "$dataset" --learning_rate "$learning_rate" --hd_representation "$hd_representation" --gaussian_noise "$noise";
+        python3 main.py --model KalmanHD --dataset "$dataset" --learning_rate "$learning_rate" --hd_representation "$hd_representation" --flipping_rate "$noise";
 
         # python3 main.py --model DNN --dataset "$dataset" --gaussian_noise "$noise";
     done
