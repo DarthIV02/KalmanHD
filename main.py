@@ -19,7 +19,7 @@ def parse_option():
     parser.add_argument('--epochs', type=int, default=1,
                         help='number of training epochs or number of passes on dataset')
     
-    parser.add_argument('--learning_rate', type=float, default=0.000001,
+    parser.add_argument('--learning_rate', type=float, default=0.01,
                         help='learning rate gradient for the model')
     
     parser.add_argument('--hd_encoder', type=str, default='nonlinear',
@@ -36,10 +36,10 @@ def parse_option():
     parser.add_argument('--models', type=int, default=1, 
                         help='When using clustering, the number of models to seperate the clustering')
     
-    parser.add_argument('--dimension_hd', type=int, default=10000,
+    parser.add_argument('--dimension_hd', type=int, default=1000,
                         help='number of dimensions in the hypervector')
     
-    parser.add_argument('--dataset', type=str, default='MetroInterstateTrafficVolume', 
+    parser.add_argument('--dataset', type=str, default='SanFranciscoTraffic', 
                         choices=['SanFranciscoTraffic', 'MetroInterstateTrafficVolume', 
                                  'GuangzhouTraffic', 'EnergyConsumptionFraunhofer', 'ElectricityLoadDiagrams'],
                         help='Dataset to initialize')
@@ -47,7 +47,7 @@ def parse_option():
     parser.add_argument('--trial', type=int, default=0,
                         help='id for recording multiple runs')
     
-    parser.add_argument('--model', type=str, default='VAE', 
+    parser.add_argument('--model', type=str, default='KalmanHD', 
                         choices=['RegHD', 'VAE', 'DNN', 'KalmanFilter', 'KalmanHD'],
                         help='Model to test')
     
@@ -160,7 +160,7 @@ def main():
        vae, enc, dec, es = Train_Model(vae, es, matrix_1_norm, sets_training, opt.retraining, opt.dataset, opt.size_of_sample + 1, opt.epochs)
        error = Test_Model(vae, matrix_1_norm_org, sets_testing, opt.size_of_sample + 1)  
 
-    add_value_to_csv(csv_file, opt.dataset, opt.model, 'Gaussian', opt.gaussian_noise, opt.learning_rate, opt.hd_representation, error)
+    add_value_to_csv(csv_file, opt.dataset, opt.model, 'Flipping', opt.flipping_rate, opt.learning_rate, opt.hd_representation, error)
 
     # Save results
 
