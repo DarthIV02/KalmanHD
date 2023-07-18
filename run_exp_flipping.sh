@@ -13,20 +13,20 @@ do
         elif [ "$dataset" = "GuangzhouTraffic" ]; then
             learning_rate=0.000001
             hd_representation=4
-            dimension_hd=2000
+            dimension_hd=1000
         elif [ "$dataset" = "EnergyConsumptionFraunhofer" ]; then
             learning_rate=0.000001
             hd_representation=4
-            dimension_hd=2000
+            dimension_hd=1000
         elif [ "$dataset" = "ElectricityLoadDiagrams" ]; then
             learning_rate=0.00001
             hd_representation=1
-            dimension_hd=5000
+            dimension_hd=2000
         fi
         
         python3 main.py --model RegHD --dataset "$dataset" --learning_rate "$learning_rate" --hd_representation "$hd_representation" --dimension_hd "$dimension_hd" --flipping_rate "$noise";
 
-        python3 main.py --model KalmanFilter --dataset "$dataset" --flipping_rate "$noise";
+        #python3 main.py --model KalmanFilter --dataset "$dataset" --flipping_rate "$noise";
         
         if [ "$dataset" = "SanFranciscoTraffic" ]; then
             learning_rate=0.01
@@ -45,8 +45,8 @@ do
             hd_representation=1
         fi
 
-        python3 main.py --model KalmanHD --dataset "$dataset" --learning_rate "$learning_rate" --hd_representation "$hd_representation" --flipping_rate "$noise";
+        # python3 main.py --model KalmanHD --dataset "$dataset" --learning_rate "$learning_rate" --hd_representation "$hd_representation" --flipping_rate "$noise";
 
-        # python3 main.py --model DNN --dataset "$dataset" --gaussian_noise "$noise";
+        python3 main.py --model DNN --dataset "$dataset" --gaussian_noise "$noise";
     done
 done

@@ -47,7 +47,7 @@ def parse_option():
     parser.add_argument('--trial', type=int, default=0,
                         help='id for recording multiple runs')
     
-    parser.add_argument('--model', type=str, default='DNN', 
+    parser.add_argument('--model', type=str, default='VAE', 
                         choices=['RegHD', 'VAE', 'DNN', 'KalmanFilter', 'KalmanHD'],
                         help='Model to test')
     
@@ -151,8 +151,8 @@ def main():
     if opt.model == "DNN":
         from models.DNN.DNN import Return_Model, Train_Model, Test_Model
         model = Return_Model(opt.size_of_sample)
-        model = Train_Model(model, matrix_1_norm, sets_training, opt.retraining, opt.dataset, opt.size_of_sample, opt.epochs)
-        error = Test_Model(model, matrix_1_norm_org, sets_testing, opt.size_of_sample)        
+        model = Train_Model(model, matrix_1_norm, sets_training, opt.retraining, opt.dataset, opt.size_of_sample, opt.epochs, opt.flipping_rate)
+        error = Test_Model(model, matrix_1_norm_org, sets_testing, opt.size_of_sample, opt.flipping_rate)        
 
     if opt.model == "VAE":
        from models.VAE.VAE import Return_Model, Train_Model, Test_Model
