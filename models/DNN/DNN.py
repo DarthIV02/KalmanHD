@@ -101,7 +101,10 @@ def flip_bits(x, flipping_rate, seq_lengt):
                     value[pos % 64] = '0'
                 value = "".join(value)
                 value = decode('%%0%dx' % (8 << 1) % int(value, 2), 'hex')[-8:]
-                x[pos//64] = struct.unpack('>d', value)[0]
+                if (struct.unpack('>d', value)[0] > 0.0000001 and struct.unpack('>d', value)[0] < 1000000):
+                    x[pos//64] = np.float64(struct.unpack('>d', value)[0])
+                else:
+                    x[pos//64] = np.float64(0.1)
         return x
 
 def Train_Model(model, matrix, sets_training, retraining, dataset, size, epochs, flipping_rate, noise="None", level=0):
