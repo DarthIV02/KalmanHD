@@ -9,6 +9,8 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
+import struct
+from codecs import decode
 
 def squeeze_excite_block(input):
     ''' Create a squeeze-excite block
@@ -84,8 +86,25 @@ def Return_Model(size):
     model_noise_resilience = generate_model(size)
     return model_noise_resilience
 
+def flip_bits(x, flipping_rate, seq_lengt):
+        if flipping_rate > 0:
+            total_bits = seq_lengt * 64
+            flip_positions = np.random.choice(total_bits, int(flipping_rate * total_bits), replace=False)
+            for pos in flip_positions:
+                #value = struct.pack('!f', x[pos//64])
+                #value = list(''.join(format(c, '016b') for c in value)) # .rjust(64, '0')
+                [d] = struct.unpack(">Q", struct.pack(">d",  x[pos//64]))
+                value = list('{:064b}'.format(d))
+                if(value[pos % 64] == '0'):
+                    value[pos % 64] = '1'
+                else:
+                    value[pos % 64] = '0'
+                value = "".join(value)
+                value = decode('%%0%dx' % (8 << 1) % int(value, 2), 'hex')[-8:]
+                x[pos//64] = struct.unpack('>d', value)[0]
+        return x
 
-def Train_Model(model, matrix, sets_training, retraining, dataset, size, epochs, noise="None", level=0):
+def Train_Model(model, matrix, sets_training, retraining, dataset, size, epochs, flipping_rate, noise="None", level=0):
 
     if retraining:
         model.load_weights(f"trained_models/dnn-{dataset}_{size}_{epochs}_{noise}_{level}.h5")
@@ -108,7 +127,7 @@ def Train_Model(model, matrix, sets_training, retraining, dataset, size, epochs,
 
                 for n in range(samples.shape[0]):
                     Y_train[test] = labels[n]
-                    X_train[test] = samples[n, :]
+                    X_train[test] = flip_bits(samples[n, :], flipping_rate, size)
                     test += 1
 
         X_train = X_train.reshape(X_train.shape[0], 1, X_train.shape[1])
@@ -120,7 +139,7 @@ def Train_Model(model, matrix, sets_training, retraining, dataset, size, epochs,
     return model
 
 
-def Test_Model(model, matrix, sets_testing, size):
+def Test_Model(model, matrix, sets_testing, size, flipping_rate):
 
     dif_dnn = []
 
@@ -132,7 +151,7 @@ def Test_Model(model, matrix, sets_testing, size):
             labels = matrix[:, i+size]
             for n in range(samples.shape[0]):
                 sample = samples[n, :]
-                sample2 = sample.reshape(1, 1, sample.shape[0])
+                sample2 = flip_bits(sample, flipping_rate, size).reshape(1, 1, sample.shape[0])
 
                 # Pass samples from test to model (forward function)
                 predictions = model.predict(sample2)[0][0]
