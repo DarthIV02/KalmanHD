@@ -29,14 +29,14 @@ def parse_option():
     parser.add_argument('--hd_representation', type=int, default=1,
                         help='Number of bits to use for the hypervector representation')
     
-    parser.add_argument('--clustering', type=str, default='none',
-                        choices=['none', 'spectral_clustering', 'kmeans'],
-                        help='the type of of clustering method to incorporate')
+    #parser.add_argument('--clustering', type=str, default='none',
+    #                    choices=['none', 'spectral_clustering', 'kmeans'],
+    #                    help='the type of of clustering method to incorporate')
     
-    parser.add_argument('--models', type=int, default=1, 
+    parser.add_argument('--models', type=int, default=2,
                         help='When using clustering, the number of models to seperate the clustering')
     
-    parser.add_argument('--dimension_hd', type=int, default=2000,
+    parser.add_argument('--dimension_hd', type=int, default=1000,
                         help='number of dimensions in the hypervector')
     
     parser.add_argument('--dataset', type=str, default='SanFranciscoTraffic', 
@@ -47,7 +47,10 @@ def parse_option():
     parser.add_argument('--trial', type=int, default=0,
                         help='id for recording multiple runs')
     
-    parser.add_argument('--model', type=str, default='VAE', 
+    parser.add_argument('--novelty', type=float, default=0.1,
+                        help='cosine similarity difference for a timeseries to be considered new')
+    
+    parser.add_argument('--model', type=str, default='KalmanHD', 
                         choices=['RegHD', 'VAE', 'DNN', 'KalmanFilter', 'KalmanHD'],
                         help='Model to test')
     
@@ -122,7 +125,7 @@ def main():
         print("Using CPU device")
     
     # Example usage
-    csv_file = 'results2.csv'
+    csv_file = 'results_Models.csv'
 
     if opt.model == "RegHD":
         from models.RegHD.RegHD import Return_Model
@@ -160,7 +163,7 @@ def main():
        vae, enc, dec, es = Train_Model(vae, es, matrix_1_norm, sets_training, opt.retraining, opt.dataset, opt.size_of_sample + 1, opt.epochs, opt.flipping_rate)
        error = Test_Model(vae, matrix_1_norm_org, sets_testing, opt.size_of_sample + 1, opt.flipping_rate)  
 
-    add_value_to_csv(csv_file, opt.dataset, opt.model, 'Flipping', opt.flipping_rate, opt.learning_rate, opt.hd_representation, error)
+    add_value_to_csv(csv_file, opt.dataset, opt.model, opt.models, opt.novelty, opt.learning_rate, opt.hd_representation, error)
 
     # Save results
 
@@ -193,7 +196,7 @@ def add_value_to_csv(csv_file, ts, model, noise, noiseVol, lr, hd_bites, mae):
             data = list(reader)
     except FileNotFoundError:
         # If the file doesn't exist, create a new one with the header
-        data = [['TimeSeries Dataset', 'Model', 'NoiseType', 'NoiseVol', 'Lr', 'hd_bites', 'MAE']]
+        data = [['TimeSeries Dataset', 'Model', 'Models', 'Novelty', 'Lr', 'hd_bites', 'MAE']]
     
     # Add the value to the data
     data.append([ts, model, noise, noiseVol, lr, hd_bites, mae])
