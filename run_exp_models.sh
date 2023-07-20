@@ -1,4 +1,4 @@
-for models in 4 8 32
+for models in 2 8 32
 do
     for novelty in 0.3 0.5 0.7
     do
