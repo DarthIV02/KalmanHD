@@ -27,9 +27,12 @@ do
             elif [ "$dataset" = "ElectricityLoadDiagrams" ]; then
                 learning_rate=0.01
                 hd_representation=1
+                y=1
             fi
             
             python3 main.py --model KalmanHD --models "$models" --novelty "$novelty" --dataset "$dataset" --learning_rate "$learning_rate" --hd_representation "$hd_representation";
+
+            novelty=$(bc <<< "scale=4;$novelty*$y")
         done
     done
 done
