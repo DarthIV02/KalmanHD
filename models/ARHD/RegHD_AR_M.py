@@ -79,9 +79,10 @@ class RegHD_AR(nn.Module):
         """self.alpha = {}
         for i in range(number_ts):
             self.alpha[i] = torch.zeros(self.d, 1) # Initial state estimate"""
-        self.alpha = torch.zeros(d, 1).float()
-        self.var = 0
+        self.alpha = [torch.zeros(d, 1).float()]
+        self.var = [0]
         self.current_ts = None
+        self.cluster = []
 
     def hard_quantize(self, hv):
         hv = (hv+self.size)/((self.size)*(2**(1-self.opt.hd_representation)))
@@ -118,22 +119,34 @@ class RegHD_AR(nn.Module):
             self.current_ts = kwargs['ts']
             self.covarianceMatrix = 0.1*torch.eye(self.d)
 
-        model_result, enc = self(x, ts = kwargs['ts'])
+        model_result, enc, index, novel = self(x, ts = kwargs['ts'])
         enc = torch.reshape(enc, (1, self.d))
+
+        if len(self.cluster) == 0:
+            self.cluster.append(enc)
+        else:
+            if novel and len(self.cluster) < self.opt.models:
+                index = len(self.cluster)
+                self.cluster.append(enc)
+                self.alpha.append(torch.zeros(self.d, 1).float())
+                self.var.append(0)
+            else:
+                self.cluster[index] = bundle(self.cluster[index], enc)
+
         x = torch.reshape(torch.tensor(x, dtype = torch.float32), (1, self.size))
         const = torch.matmul(self.covarianceMatrix, torch.transpose(enc, 0, 1))
         complete = torch.matmul(enc,const)
         #const = torch.matmul(enc, torch.matmul(self.covarianceMatrix, torch.transpose(enc, 0, 1)))
-        self.var = (self.opt.alpha * self.var) + (1-self.opt.alpha) * torch.var(x)
+        self.var[index] = (self.opt.alpha * self.var[index]) + (1-self.opt.alpha) * torch.var(x)
         #self.alpha[kwargs['ts']] += torch.transpose(float(self.lr) * A_t * enc, 0, 1)
         A_t = float(y - model_result)
-        if (float(complete + self.var) >= 0.001 or float(complete + self.var) <= -0.001):
+        if (float(complete + self.var[index]) >= 0.001 or float(complete + self.var[index]) <= -0.001):
         #if(torch.var(x) >= 0.0001 or torch.var(x) <= -0.0001):
-            G_t = const / (complete + self.var)
+            G_t = const / (complete + self.var[index])
     
             
         #for i in range(kwargs['ts'], len(self.alpha)):
-            self.alpha += G_t*A_t*self.opt.learning_rate
+            self.alpha[index] += G_t*A_t*self.opt.learning_rate
             #self.alpha += (torch.transpose(enc, 0, 1) / (const + torch.var(x)))*A_t*self.lr
             #self.alpha[kwargs['ts']] += (torch.transpose(enc, 0, 1)/self.var)*A_t
             #self.alpha[kwargs['ts']] += torch.transpose(float(self.lr) * A_t * enc, 0, 1)
@@ -145,13 +158,23 @@ class RegHD_AR(nn.Module):
         x = torch.tensor(x.reshape((self.size, 1)), dtype = torch.float32)
         
         enc = self.encode(x, ts = kwargs['ts'])
+
+        try:
+            sim = [cos_similarity(enc, self.cluster[i]) for i in range(len(self.cluster))]
+            novel = all(float(s) < 1-self.opt.novelty for s in sim)
+            index = sim.index(max(sim))
+        except:
+            index = 0
+
+        
+        
         #enc = self.encode(x, ts = kwargs['ts'])
         #enc = torch.reshape(enc, (1, self.d))
-        model_result = F.linear(enc.type(torch.FloatTensor), torch.transpose(self.alpha.type(torch.FloatTensor), 0, 1))
+        model_result = F.linear(enc.type(torch.FloatTensor), torch.transpose(self.alpha[index].type(torch.FloatTensor), 0, 1))
         #model_result = torch.sum(enc)
         #self.alpha[kwargs['ts']] = torch.reshape(self.alpha[kwargs['ts']], (self.size, self.d))
         
-        return model_result, enc
+        return model_result, enc, index, novel
 
     def train(self, sets_training, matrix_1_norm, matrix_1_norm_org, y, epochs, sets_cv):
 
@@ -170,7 +193,7 @@ class RegHD_AR(nn.Module):
 
                     self.model_update(sample, label, ts = n, time = i) # Pass input and label to train
                     
-                    predictions_testing, enc = self(sample, ts = n)
+                    predictions_testing, enc, index, novel = self(sample, ts = n)
                     y[n, i+self.size] = float(predictions_testing)
                 
                 if (n % self.opt.print_freq == 0):
@@ -191,7 +214,7 @@ class RegHD_AR(nn.Module):
                     matrix_1_norm[n, i+self.size] = predictions
                 label = torch.tensor(labels[n])
                 # Pass samples from test to model (forward function)
-                predictions, enc = self(sample, ts = n)
+                predictions, enc, index, novel= self(sample, ts = n)
                 pred.append(float(predictions))
                 y[n, i+self.size] = float(predictions)
                 labels_full.append(matrix_1_norm_org[n, i+self.size])
