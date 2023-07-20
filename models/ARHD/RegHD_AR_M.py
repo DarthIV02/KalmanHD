@@ -127,10 +127,12 @@ class RegHD_AR(nn.Module):
 
         if novel and self.last_cluster < self.opt.models:
             self.cluster[self.last_cluster] += enc[0]
+            self.cluster[self.last_cluster] = self.hard_quantize(self.cluster[self.last_cluster])
             print(f"New model {self.last_cluster} in ts {kwargs['ts']}")
             self.last_cluster += 1
         else:
             self.cluster[index] += enc[0]
+            self.cluster[index] = self.hard_quantize(self.cluster[index])
 
         enc =  torch.tensor(enc, dtype = torch.float32)
         x = torch.reshape(torch.tensor(x, dtype = torch.float32), (1, self.size))

@@ -26,7 +26,7 @@ def parse_option():
                         choices=['nonlinear', 'time_encoding', 'bind_timeseries', 'linear'],
                         help='the type of hd encoding function to use')
     
-    parser.add_argument('--hd_representation', type=int, default=1,
+    parser.add_argument('--hd_representation', type=int, default=4,
                         help='Number of bits to use for the hypervector representation')
     
     #parser.add_argument('--clustering', type=str, default='none',
@@ -39,7 +39,7 @@ def parse_option():
     parser.add_argument('--dimension_hd', type=int, default=1000,
                         help='number of dimensions in the hypervector')
     
-    parser.add_argument('--dataset', type=str, default='ElectricityLoadDiagrams', 
+    parser.add_argument('--dataset', type=str, default='SanFranciscoTraffic', 
                         choices=['SanFranciscoTraffic', 'MetroInterstateTrafficVolume', 
                                  'GuangzhouTraffic', 'EnergyConsumptionFraunhofer', 'ElectricityLoadDiagrams'],
                         help='Dataset to initialize')
@@ -47,7 +47,7 @@ def parse_option():
     parser.add_argument('--trial', type=int, default=0,
                         help='id for recording multiple runs')
     
-    parser.add_argument('--novelty', type=float, default=0.05,
+    parser.add_argument('--novelty', type=float, default=0.6,
                         help='cosine similarity difference for a timeseries to be considered new')
     
     parser.add_argument('--model', type=str, default='KalmanHD', 
