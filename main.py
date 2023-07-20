@@ -33,7 +33,7 @@ def parse_option():
     #                    choices=['none', 'spectral_clustering', 'kmeans'],
     #                    help='the type of of clustering method to incorporate')
     
-    parser.add_argument('--models', type=int, default=2,
+    parser.add_argument('--models', type=int, default=4,
                         help='When using clustering, the number of models to seperate the clustering')
     
     parser.add_argument('--dimension_hd', type=int, default=1000,

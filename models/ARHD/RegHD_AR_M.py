@@ -88,7 +88,7 @@ class RegHD_AR(nn.Module):
 
     def hard_quantize(self, hv):
         #hv = (hv+self.size)/((self.size)*(2**(1-self.opt.hd_representation)))
-        hv = ((hv)*(2**(1-self.opt.hd_representation)))/self.size
+        hv = ((hv)*(2**(self.opt.hd_representation-1)))/self.size
         hv = torch.tensor(hv // 1 + 2 ** (hv > 0) - 1, dtype = torch.int8)
         return hv
     
@@ -127,12 +127,13 @@ class RegHD_AR(nn.Module):
 
         if novel and self.last_cluster < self.opt.models:
             self.cluster[self.last_cluster] += enc[0]
-            self.cluster[self.last_cluster] = self.hard_quantize(self.cluster[self.last_cluster])
+            #self.cluster[self.last_cluster] = self.hard_quantize(self.cluster[self.last_cluster])
             print(f"New model {self.last_cluster} in ts {kwargs['ts']}")
             self.last_cluster += 1
         else:
             self.cluster[index] += enc[0]
-            self.cluster[index] = self.hard_quantize(self.cluster[index])
+            self.cluster[index] = self.cluster[index] // 2
+            #self.cluster[index] = self.hard_quantize(self.cluster[index])
 
         enc =  torch.tensor(enc, dtype = torch.float32)
         x = torch.reshape(torch.tensor(x, dtype = torch.float32), (1, self.size))
