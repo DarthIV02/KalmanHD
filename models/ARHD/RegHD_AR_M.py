@@ -83,13 +83,14 @@ class RegHD_AR(nn.Module):
         self.var = [0]
         self.current_ts = None
         self.cluster = []
+        self.min = 1
 
     def hard_quantize(self, hv):
         hv = (hv+self.size)/((self.size)*(2**(1-self.opt.hd_representation)))
         hv = torch.floor(hv)
         return hv
     
-    def flip_bits(self, enc):
+    """def flip_bits(self, enc):
         total_bits = self.d * self.opt.hd_representation
         flip_positions = np.random.choice(total_bits, int(self.opt.flipping_rate * total_bits), replace=False)
         for pos in flip_positions:
@@ -100,7 +101,7 @@ class RegHD_AR(nn.Module):
                 value[pos % self.opt.hd_representation] = '0'
             value = "".join(value)
             enc[pos//self.opt.hd_representation] = int(value,2)
-        return enc
+        return enc"""
     
     def encode(self, x, **kwargs): # encoding a single value TENSOR
         #x_2 = x * self.alpha[kwargs['ts']]
@@ -108,8 +109,8 @@ class RegHD_AR(nn.Module):
         enc = torch.cos(enc + self.bias) * torch.sin(enc) 
         # return self.hard_quantize(multiset(torch.transpose(enc, 0, 1))) <-- Original with RegHD
         enc = self.hard_quantize(multiset(torch.transpose(enc, 0, 1)))
-        if self.opt.flipping_rate > 0:
-            enc = self.flip_bits(enc)
+        #if self.opt.flipping_rate > 0:
+            #enc = self.flip_bits(enc)
         return enc
 
 
@@ -132,7 +133,7 @@ class RegHD_AR(nn.Module):
                 self.alpha.append(torch.zeros(self.d, 1).float())
                 self.var.append(0)
             else:
-                self.cluster[index] = bundle(self.cluster[index], enc)
+                self.cluster[index] = bundle(self.cluster[index], enc)//2
 
         x = torch.reshape(torch.tensor(x, dtype = torch.float32), (1, self.size))
         const = torch.matmul(self.covarianceMatrix, torch.transpose(enc, 0, 1))
@@ -164,6 +165,8 @@ class RegHD_AR(nn.Module):
             sim = [cos_similarity(enc, self.cluster[i]) for i in range(len(self.cluster))]
             novel = all(float(s) < 1-self.opt.novelty for s in sim)
             index = sim.index(max(sim))
+            if max(sim) < self.min and max(sim) > 0:
+                self.min = max(sim)
         except:
             index = 0
 

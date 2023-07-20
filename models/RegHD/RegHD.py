@@ -53,7 +53,7 @@ class RegHD(nn.Module):
         hv = torch.floor(hv)
         return hv
     
-    def flip_bits(self, enc):
+    """def flip_bits(self, enc):
         total_bits = self.d * self.opt.hd_representation
         flip_positions = np.random.choice(total_bits, int(self.opt.flipping_rate * total_bits), replace=False)
         for pos in flip_positions:
@@ -64,7 +64,7 @@ class RegHD(nn.Module):
                 value[pos % self.opt.hd_representation] = '0'
             value = "".join(value)
             enc[pos//self.opt.hd_representation] = int(value,2)
-        return enc
+        return enc"""
 
     def encode(self, x, **kwargs): # encoding a single value TENSOR
         enc = self.project(torch.reshape(x, (1, self.size)))
@@ -72,8 +72,8 @@ class RegHD(nn.Module):
         #return functional.hard_quantize(enc)
         #return self.hard_quantize(enc) <-- Original
         enc = self.hard_quantize(enc)
-        if self.opt.flipping_rate > 0:
-            enc = self.flip_bits(enc[0])
+        #if self.opt.flipping_rate > 0:
+        #    enc = self.flip_bits(enc[0])
         return enc
     
     def model_update(self, x, y, **kwargs): # update # y = no hv

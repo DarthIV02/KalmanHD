@@ -69,7 +69,7 @@ class RegHD_AR(nn.Module):
             self.covarianceMatrix[kwargs['ts']] -= torch.matmul(torch.matmul(G_t, x), self.covarianceMatrix[kwargs['ts']])
         
     
-    def flip_bits(self, x):
+    """def flip_bits(self, x):
         total_bits = self.state_dim * 64
         flip_positions = np.random.choice(total_bits, int(self.opt.flipping_rate * total_bits), replace=False)
         for pos in flip_positions:
@@ -84,12 +84,12 @@ class RegHD_AR(nn.Module):
             value = "".join(value)
             value = decode('%%0%dx' % (8 << 1) % int(value, 2), 'hex')[-8:]
             x[pos//64] = np.float64(struct.unpack('>d', value)[0])
-        return x
+        return x"""
     
     def forward(self, x, **kwargs): # With weights x: array of values
         #x = torch.tensor(x.reshape((self.size, 1)), dtype = torch.float32)
-        if self.opt.flipping_rate > 0:
-            x = self.flip_bits(x)
+        #if self.opt.flipping_rate > 0:
+        #    x = self.flip_bits(x)
         #model_result = torch.matmul(torch.tensor(x, dtype=torch.float32), self.alpha[kwargs['ts']])
         model_result = torch.matmul(torch.tensor(x, dtype=torch.float32), self.alpha)
         #return model_result, enc, hvs

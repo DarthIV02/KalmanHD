@@ -86,7 +86,7 @@ def Return_Model(size):
     model_noise_resilience = generate_model(size)
     return model_noise_resilience
 
-def flip_bits(x, flipping_rate, seq_lengt):
+"""def flip_bits(x, flipping_rate, seq_lengt):
         if flipping_rate > 0:
             total_bits = seq_lengt * 64
             flip_positions = np.random.choice(total_bits, int(flipping_rate * total_bits), replace=False)
@@ -105,7 +105,7 @@ def flip_bits(x, flipping_rate, seq_lengt):
                     x[pos//64] = np.float64(struct.unpack('>d', value)[0])
                 else:
                     x[pos//64] = np.float64(0.1)
-        return x
+        return x"""
 
 def Train_Model(model, matrix, sets_training, retraining, dataset, size, epochs, flipping_rate, noise="None", level=0):
 
@@ -130,7 +130,8 @@ def Train_Model(model, matrix, sets_training, retraining, dataset, size, epochs,
 
                 for n in range(samples.shape[0]):
                     Y_train[test] = labels[n]
-                    X_train[test] = flip_bits(samples[n, :], flipping_rate, size)
+                    #X_train[test] = flip_bits(samples[n, :], flipping_rate, size)
+                    X_train[test] = samples[n, :]
                     test += 1
 
         X_train = X_train.reshape(X_train.shape[0], 1, X_train.shape[1])
@@ -154,10 +155,10 @@ def Test_Model(model, matrix, sets_testing, size, flipping_rate):
             labels = matrix[:, i+size]
             for n in range(samples.shape[0]):
                 sample = samples[n, :]
-                sample2 = flip_bits(sample, flipping_rate, size).reshape(1, 1, sample.shape[0])
+                #sample2 = flip_bits(sample, flipping_rate, size).reshape(1, 1, sample.shape[0])
 
                 # Pass samples from test to model (forward function)
-                predictions = model.predict(sample2)[0][0]
+                predictions = model.predict(sample)[0][0]
                 pred.append(predictions)
                 labels_full.append(labels[n])
                 dif_dnn.append(np.absolute(labels[n]-predictions))

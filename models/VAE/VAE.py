@@ -101,7 +101,7 @@ def get_model(sequence_length):
 
 ### UTILITY FUNCTION FOR 3D SEQUENCE GENERATION ###
 
-def flip_bits(x, flipping_rate, seq_lengt):
+"""def flip_bits(x, flipping_rate, seq_lengt):
         total_bits = seq_lengt * 64
         flip_positions = np.random.choice(total_bits, int(flipping_rate * total_bits), replace=False)
         for pos in flip_positions:
@@ -119,7 +119,7 @@ def flip_bits(x, flipping_rate, seq_lengt):
                 x[pos//64] = np.float64(struct.unpack('>d', value)[0])
             else:
                 x[pos//64] = np.float64(0.1)
-        return x
+        return x"""
 
 def gen_seq(ts, id_df, seq_length, seq_cols, id, flipping_rate):
 
@@ -184,9 +184,9 @@ def Train_Model(vae, es, matrix, sets_training, retraining, dataset, sequence_le
 
     else:
 
-        if flipping_rate > 0:
+        """if flipping_rate > 0:
             for i in range(matrix.shape[0]):
-                matrix[i] = flip_bits(matrix[i], flipping_rate, matrix.shape[1])
+                matrix[i] = flip_bits(matrix[i], flipping_rate, matrix.shape[1])"""
 
         a_full = []
         for i in range(matrix.shape[0]):
