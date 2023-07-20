@@ -39,7 +39,7 @@ def parse_option():
     parser.add_argument('--dimension_hd', type=int, default=1000,
                         help='number of dimensions in the hypervector')
     
-    parser.add_argument('--dataset', type=str, default='SanFranciscoTraffic', 
+    parser.add_argument('--dataset', type=str, default='ElectricityLoadDiagrams', 
                         choices=['SanFranciscoTraffic', 'MetroInterstateTrafficVolume', 
                                  'GuangzhouTraffic', 'EnergyConsumptionFraunhofer', 'ElectricityLoadDiagrams'],
                         help='Dataset to initialize')
@@ -47,7 +47,7 @@ def parse_option():
     parser.add_argument('--trial', type=int, default=0,
                         help='id for recording multiple runs')
     
-    parser.add_argument('--novelty', type=float, default=0.1,
+    parser.add_argument('--novelty', type=float, default=0.05,
                         help='cosine similarity difference for a timeseries to be considered new')
     
     parser.add_argument('--model', type=str, default='KalmanHD', 

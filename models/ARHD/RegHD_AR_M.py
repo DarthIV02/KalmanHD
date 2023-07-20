@@ -79,15 +79,17 @@ class RegHD_AR(nn.Module):
         """self.alpha = {}
         for i in range(number_ts):
             self.alpha[i] = torch.zeros(self.d, 1) # Initial state estimate"""
-        self.alpha = [torch.zeros(d, 1).float()]
-        self.var = [0]
+        self.alpha = torch.stack([torch.zeros(d, 1) for _ in range(self.opt.models)])
+        self.var = [0]*self.opt.models
         self.current_ts = None
-        self.cluster = []
+        self.cluster = torch.stack([torch.zeros(d) for _ in range(self.opt.models)])
+        self.last_cluster = 0
         self.min = 1
 
     def hard_quantize(self, hv):
-        hv = (hv+self.size)/((self.size)*(2**(1-self.opt.hd_representation)))
-        hv = torch.floor(hv)
+        #hv = (hv+self.size)/((self.size)*(2**(1-self.opt.hd_representation)))
+        hv = ((hv)*(2**(1-self.opt.hd_representation)))/self.size
+        hv = torch.tensor(hv // 1 + 2 ** (hv > 0) - 1, dtype = torch.int8)
         return hv
     
     """def flip_bits(self, enc):
@@ -111,6 +113,7 @@ class RegHD_AR(nn.Module):
         enc = self.hard_quantize(multiset(torch.transpose(enc, 0, 1)))
         #if self.opt.flipping_rate > 0:
             #enc = self.flip_bits(enc)
+        enc = torch.tensor(torch.reshape(enc, (1, self.d)), dtype=torch.float32)
         return enc
 
 
@@ -121,22 +124,17 @@ class RegHD_AR(nn.Module):
             self.covarianceMatrix = 0.1*torch.eye(self.d)
 
         model_result, enc, index, novel = self(x, ts = kwargs['ts'])
-        enc = torch.reshape(enc, (1, self.d))
 
-        if len(self.cluster) == 0:
-            self.cluster.append(enc)
+        if novel and self.last_cluster < self.opt.models:
+            self.cluster[self.last_cluster] += enc[0]
+            print(f"New model {self.last_cluster} in ts {kwargs['ts']}")
+            self.last_cluster += 1
         else:
-            if novel and len(self.cluster) < self.opt.models:
-                index = len(self.cluster)
-                self.cluster.append(enc)
-                print(f"New model {len(self.cluster)} in ts {kwargs['ts']}")
-                self.alpha.append(torch.zeros(self.d, 1).float())
-                self.var.append(0)
-            else:
-                self.cluster[index] = bundle(self.cluster[index], enc)//2
+            self.cluster[index] += enc[0]
 
+        enc =  torch.tensor(enc, dtype = torch.float32)
         x = torch.reshape(torch.tensor(x, dtype = torch.float32), (1, self.size))
-        const = torch.matmul(self.covarianceMatrix, torch.transpose(enc, 0, 1))
+        const = torch.matmul(self.covarianceMatrix,torch.transpose(enc, 0, 1))
         complete = torch.matmul(enc,const)
         #const = torch.matmul(enc, torch.matmul(self.covarianceMatrix, torch.transpose(enc, 0, 1)))
         self.var[index] = (self.opt.alpha * self.var[index]) + (1-self.opt.alpha) * torch.var(x)
@@ -157,18 +155,20 @@ class RegHD_AR(nn.Module):
             self.covarianceMatrix -= torch.matmul(G_t, torch.transpose(const, 0, 1))
     
     def forward(self, x, **kwargs): # With weights x: array of values
-        x = torch.tensor(x.reshape((self.size, 1)), dtype = torch.float32)
-        
+        x = torch.tensor(x.reshape((self.size, 1)), dtype = torch.float32)    
         enc = self.encode(x, ts = kwargs['ts'])
 
         try:
-            sim = [cos_similarity(enc, self.cluster[i]) for i in range(len(self.cluster))]
-            novel = all(float(s) < 1-self.opt.novelty for s in sim)
-            index = sim.index(max(sim))
-            if max(sim) < self.min and max(sim) > 0:
-                self.min = max(sim)
+            #cluster = torch.tensor(cluster)
+            # sim = [cos_similarity(enc, self.cluster[i]) for i in range(len(self.cluster))]
+            sim = cos_similarity(enc, self.cluster)
+            novel = all(float(s) < 1-self.opt.novelty for s in sim[0])
+            index = int((sim == max(sim[0]))[0].nonzero(as_tuple=True)[0])
+            if max(sim[0]) < self.min and max(sim[0]) > 0:
+                self.min = float(max(sim[0]))
         except:
             index = 0
+            novel = True
 
         
         
