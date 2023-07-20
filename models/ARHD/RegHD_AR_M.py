@@ -128,6 +128,7 @@ class RegHD_AR(nn.Module):
             if novel and len(self.cluster) < self.opt.models:
                 index = len(self.cluster)
                 self.cluster.append(enc)
+                print(f"New model {len(self.cluster)} in ts {kwargs['ts']}")
                 self.alpha.append(torch.zeros(self.d, 1).float())
                 self.var.append(0)
             else:
