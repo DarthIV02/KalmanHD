@@ -522,3 +522,14 @@ MetroInterstateTrafficVolume,RegHD,Flipping,0.15,1e-05,2,0.20028418525073374
 GuangzhouTraffic,RegHD,Flipping,0.15,1e-06,4,0.20876454846633646
 EnergyConsumptionFraunhofer,RegHD,Flipping,0.15,1e-06,4,0.29273111424000925
 ElectricityLoadDiagrams,RegHD,Flipping,0.15,1e-05,1,0.09562037104797688
+SanFranciscoTraffic,DNN,Flipping,0.1,0.01,1,0.3721049692899383
+MetroInterstateTrafficVolume,DNN,Flipping,0.1,0.01,1,0.292576077744201
+GuangzhouTraffic,DNN,Flipping,0.1,0.01,1,0.14450758350875678
+EnergyConsumptionFraunhofer,DNN,Flipping,0.1,0.01,1,0.23289545289308788
+ElectricityLoadDiagrams,DNN,Flipping,0.1,0.01,1,0.257829255637049
+SanFranciscoTraffic,DNN,Flipping,0.15,0.01,1,0.2467010548245428
+MetroInterstateTrafficVolume,DNN,Flipping,0.15,0.01,1,0.2637884052245172
+GuangzhouTraffic,DNN,Flipping,0.15,0.01,1,0.110097300671585
+EnergyConsumptionFraunhofer,DNN,Flipping,0.15,0.01,1,0.23395506005661254
+ElectricityLoadDiagrams,DNN,Flipping,0.15,0.01,1,0.2575895927868476
+SanFranciscoTraffic,KalmanHD,Test,0.0,0.01,1,0.14292234788340796

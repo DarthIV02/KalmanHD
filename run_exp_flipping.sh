@@ -1,4 +1,4 @@
-for noise in 0.01 0.02 0.05 0.10 0.15
+for noise in 0.10 0.15
 do
     for dataset in SanFranciscoTraffic MetroInterstateTrafficVolume GuangzhouTraffic EnergyConsumptionFraunhofer ElectricityLoadDiagrams
     do
@@ -24,7 +24,7 @@ do
             dimension_hd=2000
         fi
         
-        python3 main.py --model RegHD --dataset "$dataset" --learning_rate "$learning_rate" --hd_representation "$hd_representation" --dimension_hd "$dimension_hd" --flipping_rate "$noise";
+        # python3 main.py --model RegHD --dataset "$dataset" --learning_rate "$learning_rate" --hd_representation "$hd_representation" --dimension_hd "$dimension_hd" --flipping_rate "$noise";
 
         #python3 main.py --model KalmanFilter --dataset "$dataset" --flipping_rate "$noise";
         
@@ -47,6 +47,6 @@ do
 
         # python3 main.py --model KalmanHD --dataset "$dataset" --learning_rate "$learning_rate" --hd_representation "$hd_representation" --flipping_rate "$noise";
 
-        python3 main.py --model DNN --dataset "$dataset" --gaussian_noise "$noise";
+        python3 main.py --model DNN --dataset "$dataset" --flipping_rate "$noise";
     done
 done
