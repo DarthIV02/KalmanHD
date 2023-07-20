@@ -5,7 +5,7 @@ do
         if [ "$dataset" = "SanFranciscoTraffic" ]; then
             learning_rate=0.01
             hd_representation=4
-            for novelty in 0.003 0.005 0.006
+            for novelty in 0.0015 0.0025 0.003
             do
                 python3 main.py --model KalmanHD --models "$models" --novelty "$novelty" --dataset "$dataset" --learning_rate "$learning_rate" --hd_representation "$hd_representation";
             done
@@ -13,7 +13,7 @@ do
         elif [ "$dataset" = "MetroInterstateTrafficVolume" ]; then
             learning_rate=0.1
             hd_representation=2
-            for novelty in 0.02 0.04 0.05
+            for novelty in 0.01 0.02 0.025
             do
                 python3 main.py --model KalmanHD --models "$models" --novelty "$novelty" --dataset "$dataset" --learning_rate "$learning_rate" --hd_representation "$hd_representation";
             done
@@ -21,7 +21,7 @@ do
         elif [ "$dataset" = "GuangzhouTraffic" ]; then
             learning_rate=0.01
             hd_representation=4
-            for novelty in 0.002 0.003 0.004
+            for novelty in 0.001 0.0015 0.002
             do
                 python3 main.py --model KalmanHD --models "$models" --novelty "$novelty" --dataset "$dataset" --learning_rate "$learning_rate" --hd_representation "$hd_representation";
             done
@@ -29,7 +29,7 @@ do
         elif [ "$dataset" = "EnergyConsumptionFraunhofer" ]; then
             learning_rate=0.01
             hd_representation=4
-            for novelty in 0.002 0.004 0.005
+            for novelty in 0.001 0.002 0.0025
             do
                 python3 main.py --model KalmanHD --models "$models" --novelty "$novelty" --dataset "$dataset" --learning_rate "$learning_rate" --hd_representation "$hd_representation";
             done
@@ -37,7 +37,7 @@ do
         elif [ "$dataset" = "ElectricityLoadDiagrams" ]; then
             learning_rate=0.01
             hd_representation=1
-            for novelty in 0.70 0.75 0.80
+            for novelty in 0.30 0.35 0.40
             do
                 python3 main.py --model KalmanHD --models "$models" --novelty "$novelty" --dataset "$dataset" --learning_rate "$learning_rate" --hd_representation "$hd_representation";
             done

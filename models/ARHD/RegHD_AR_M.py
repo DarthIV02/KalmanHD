@@ -162,7 +162,7 @@ class RegHD_AR(nn.Module):
             #cluster = torch.tensor(cluster)
             # sim = [cos_similarity(enc, self.cluster[i]) for i in range(len(self.cluster))]
             sim = cos_similarity(enc, self.cluster)
-            novel = all(float(s) < 1-self.opt.novelty for s in sim[0])
+            novel = max(sim[0]) < 1-self.opt.novelty
             index = int((sim == max(sim[0]))[0].nonzero(as_tuple=True)[0])
             if max(sim[0]) < self.min and max(sim[0]) > 0:
                 self.min = float(max(sim[0]))
