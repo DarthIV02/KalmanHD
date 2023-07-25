@@ -154,8 +154,8 @@ def main():
     if opt.model == "VAE":
        from models.VAE.VAE import Return_Model, Train_Model, Test_Model
        vae, enc, dec, es = model = Return_Model(opt.size_of_sample + 1)
-       vae, enc, dec, es = Train_Model(vae, es, matrix_1_norm, sets_training, opt.retraining, opt.dataset, opt.size_of_sample + 1, opt.epochs, opt.flipping_rate)
-       error = Test_Model(vae, matrix_1_norm_org, sets_testing, opt.size_of_sample + 1, opt.flipping_rate)  
+       vae, enc, dec, es = Train_Model(vae, es, matrix_1_norm, sets_training, opt.retraining, opt.dataset, opt.size_of_sample + 1, opt.epochs)
+       error = Test_Model(vae, matrix_1_norm_org, sets_testing, opt.size_of_sample + 1)  
 
     # Write results
     

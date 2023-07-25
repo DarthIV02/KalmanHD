@@ -101,27 +101,7 @@ def get_model(sequence_length):
 
 ### UTILITY FUNCTION FOR 3D SEQUENCE GENERATION ###
 
-"""def flip_bits(x, flipping_rate, seq_lengt):
-        total_bits = seq_lengt * 64
-        flip_positions = np.random.choice(total_bits, int(flipping_rate * total_bits), replace=False)
-        for pos in flip_positions:
-            #value = struct.pack('!f', x[pos//64])
-            #value = list(''.join(format(c, '016b') for c in value)) # .rjust(64, '0')
-            [d] = struct.unpack(">Q", struct.pack(">d",  x[pos//64]))
-            value = list('{:064b}'.format(d))
-            if(value[pos % 64] == '0'):
-                value[pos % 64] = '1'
-            else:
-                value[pos % 64] = '0'
-            value = "".join(value)
-            value = decode('%%0%dx' % (8 << 1) % int(value, 2), 'hex')[-8:]
-            if (struct.unpack('>d', value)[0] > 0.0000001 and struct.unpack('>d', value)[0] < 1000000):
-                x[pos//64] = np.float64(struct.unpack('>d', value)[0])
-            else:
-                x[pos//64] = np.float64(0.1)
-        return x"""
-
-def gen_seq(ts, id_df, seq_length, seq_cols, id, flipping_rate):
+def gen_seq(ts, id_df, seq_length, seq_cols, id):
 
     data_matrix = id_df[seq_cols]
     num_elements = len(data_matrix)
@@ -166,7 +146,7 @@ def Return_Model(sequence_length):
     return vae, enc, dec, es
 
 
-def Train_Model(vae, es, matrix, sets_training, retraining, dataset, sequence_length, epochs, flipping_rate, noise="None", level=0):
+def Train_Model(vae, es, matrix, sets_training, retraining, dataset, sequence_length, epochs, noise="None", level=0):
     
     #gpu_devices = tf.config.experimental.list_physical_devices('GPU')
     #for device in gpu_devices:
@@ -183,11 +163,6 @@ def Train_Model(vae, es, matrix, sets_training, retraining, dataset, sequence_le
         return vae, enc, dec, es
 
     else:
-
-        """if flipping_rate > 0:
-            for i in range(matrix.shape[0]):
-                matrix[i] = flip_bits(matrix[i], flipping_rate, matrix.shape[1])"""
-
         a_full = []
         for i in range(matrix.shape[0]):
             a_full.append(np.append([0], matrix[i][:-1]))  # One shifted
@@ -212,11 +187,11 @@ def Train_Model(vae, es, matrix, sets_training, retraining, dataset, sequence_le
         for ts in range(matrix.shape[0]):
             for id in ids:
                 seq = gen_seq(
-                    ts, X.iloc[ts], sequence_length, 'traffic_volume_past', id, flipping_rate)
+                    ts, X.iloc[ts], sequence_length, 'traffic_volume_past', id)
                 sequence_input.append(seq)
 
                 seq = gen_seq(ts, Y.iloc[ts],
-                              sequence_length, 'traffic_volume', id, flipping_rate)
+                              sequence_length, 'traffic_volume', id)
                 sequence_target.append(seq)
 
         sequence_input = np.asarray(sequence_input)
@@ -260,7 +235,7 @@ def Train_Model(vae, es, matrix, sets_training, retraining, dataset, sequence_le
         return vae, enc, dec, es
 
 
-def Test_Model(vae, matrix, sets_testing, sequence_length, flipping_rate):
+def Test_Model(vae, matrix, sets_testing, sequence_length):
 
     a_full = []
     for i in range(matrix.shape[0]):
@@ -282,11 +257,11 @@ def Test_Model(vae, matrix, sets_testing, sequence_length, flipping_rate):
     for ts in range(matrix.shape[0]):
         for id in ids:
             seq = gen_seq(ts, X.iloc[ts], sequence_length,
-                          'traffic_volume_past', id, flipping_rate)
+                          'traffic_volume_past', id)
             sequence_input.append(seq)
 
             seq = gen_seq(ts, Y.iloc[ts],
-                          sequence_length, 'traffic_volume', id, flipping_rate)
+                          sequence_length, 'traffic_volume', id)
             sequence_target.append(seq)
 
     sequence_input = np.asarray(sequence_input)
