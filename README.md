@@ -3,7 +3,7 @@
 Steps to setup the code:
    1) Clone this repository.
       ```bash
-      git clone 
+      git clone https://github.com/DarthIV02/TimeSeriesForecasting-with-HD
       ```
    3) Create a new anaconda environment and activate.
       ```bash
@@ -13,7 +13,7 @@ Steps to setup the code:
    5) Run the following commands:
       ```bash
       pip install -r requirements.txt
-      torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu117
+      pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu117
       ```
 
 Important files:
