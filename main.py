@@ -29,11 +29,7 @@ def parse_option():
     parser.add_argument('--hd_representation', type=int, default=4,
                         help='Number of bits to use for the hypervector representation')
     
-    #parser.add_argument('--clustering', type=str, default='none',
-    #                    choices=['none', 'spectral_clustering', 'kmeans'],
-    #                    help='the type of of clustering method to incorporate')
-    
-    parser.add_argument('--models', type=int, default=4,
+    parser.add_argument('--models', type=int, default=1,
                         help='When using clustering, the number of models to seperate the clustering')
     
     parser.add_argument('--dimension_hd', type=int, default=1000,
@@ -75,8 +71,8 @@ def parse_option():
     parser.add_argument('--gaussian_noise', type=float, default=0.0, 
                         help='Standard deviation of the gaussian noise')
     
-    parser.add_argument('--flipping_rate', type=float, default=0.0, 
-                        help='Percentage of bits flipped')
+    #parser.add_argument('--flipping_rate', type=float, default=0.0, 
+    #                    help='Percentage of bits flipped')
 
     opt = parser.parse_args()
 
@@ -99,8 +95,8 @@ def main():
     matrix_1_original = dl.dataset_load_and_preprocess("original")
     matrix_1_norm = dl.dataset_load_and_preprocess("normalized")
     matrix_1_norm_org = np.copy(matrix_1_norm)
-    #sets = np.random.choice(matrix_1_norm.shape[1]-40, opt.num_timestamp, replace=False)
-    #sets_training, sets_testing = sets[:int(len(sets)*.8)], sets[int(len(sets)*.8):]
+    
+    # rolling window values for training, testing and cross validation
     sets_training = [i for i in range(int((matrix_1_norm.shape[1]-opt.size_of_sample)*0.7))]
     print(len(sets_training))
     sets_testing = [i for i in range(int((matrix_1_norm.shape[1]-opt.size_of_sample)*0.7), int((matrix_1_norm.shape[1]-opt.size_of_sample)*0.9))]
@@ -109,13 +105,14 @@ def main():
     for i in range(matrix_1_norm.shape[0]):
         sets_missing[i] = []
 
-    #for i in range(opt.size_of_sample, matrix_1_norm.shape[1], opt.s):
+    #add missing values
     for i in range(0, matrix_1_norm.shape[1], opt.s):
         for j in range(matrix_1_norm.shape[0]):
             if(random.random() < opt.p):
                 matrix_1_norm[j, i:i+opt.s] = 0
                 sets_missing[j].append((i, i+opt.s-1))
 
+    #add gaussian noise
     gaussian_noise = np.random.normal(0, opt.gaussian_noise, size=(matrix_1_norm.shape[0], matrix_1_norm.shape[1]))
     matrix_1_norm += gaussian_noise
 
@@ -124,15 +121,14 @@ def main():
     else:
         print("Using CPU device")
     
-    # Example usage
-    csv_file = 'results_Models.csv'
+    # File to save the results
+    csv_file = 'results2.csv'
 
     if opt.model == "RegHD":
         from models.RegHD.RegHD import Return_Model
         model = Return_Model(opt.size_of_sample, opt.dimension_hd, opt.models, matrix_1_norm.shape[0], opt)
         y = np.zeros((matrix_1_norm.shape))
         model.train(sets_training, matrix_1_norm, matrix_1_norm_org, y, opt.epochs, sets_cv)
-        #y, label = model.test2(sets_testing[0], matrix_1_norm, len(sets_testing))
         error = model.test(sets_testing, matrix_1_norm, matrix_1_norm_org, y, cv=False)
 
     if opt.model == "KalmanFilter":
@@ -140,7 +136,6 @@ def main():
         model = Return_Model(opt.size_of_sample, opt.dimension_hd, opt.models, matrix_1_norm.shape[0], opt)
         y = np.zeros((matrix_1_norm.shape))
         model.train(sets_training, matrix_1_norm, matrix_1_norm_org, y, opt.epochs, sets_cv)
-        #y, label = model.test2(sets_testing[0], matrix_1_norm, len(sets_testing))
         error = model.test(sets_testing, matrix_1_norm, matrix_1_norm_org, y, cv=False)
 
     if opt.model == "KalmanHD":
@@ -148,7 +143,6 @@ def main():
         model = Return_Model(opt.size_of_sample, opt.dimension_hd, opt.models, matrix_1_norm.shape[0], opt)
         y = np.zeros((matrix_1_norm.shape))
         model.train(sets_training, matrix_1_norm, matrix_1_norm_org, y, opt.epochs, sets_cv)
-        #y, label = model.test2(sets_testing[0], matrix_1_norm, len(sets_testing))
         error = model.test(sets_testing, matrix_1_norm, matrix_1_norm_org, y, cv=False)
 
     if opt.model == "DNN":
@@ -163,9 +157,11 @@ def main():
        vae, enc, dec, es = Train_Model(vae, es, matrix_1_norm, sets_training, opt.retraining, opt.dataset, opt.size_of_sample + 1, opt.epochs, opt.flipping_rate)
        error = Test_Model(vae, matrix_1_norm_org, sets_testing, opt.size_of_sample + 1, opt.flipping_rate)  
 
+    # Write results
+    
     add_value_to_csv(csv_file, opt.dataset, opt.model, opt.models, opt.novelty, opt.learning_rate, opt.hd_representation, error)
 
-    # Save results
+    # Visualize results
 
     """x = [i+opt.size_of_sample for i in sets_training]
     x_2 = [i+opt.size_of_sample for i in sets_testing]

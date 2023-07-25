@@ -92,3 +92,4 @@ ElectricityLoadDiagrams,KalmanHD,8,0.25,0.01,1,0.10245428965282403
 ElectricityLoadDiagrams,KalmanHD,8,0.35,0.01,1,0.09571772449396033
 ElectricityLoadDiagrams,KalmanHD,32,0.75,0.01,1,0.13418869839746259
 ElectricityLoadDiagrams,KalmanHD,32,0.8,0.01,1,0.34252195567821087
+SanFranciscoTraffic,KalmanHD,1,0.6,0.01,4,0.1401879571354529

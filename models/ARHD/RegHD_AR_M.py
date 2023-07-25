@@ -10,15 +10,11 @@ from tqdm import tqdm
 from torchhd.map import MAP
 
 import numpy as np
-# Model based on RegHD application for Single model regression -> No comparing which cluster
-
 import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.data as data
-
-# Note: this example requires the torchmetrics library: https://torchmetrics.readthedocs.io
 from sklearn.metrics import mean_squared_error
 from tqdm import tqdm
 
@@ -30,7 +26,10 @@ from sklearn.cluster import KMeans, SpectralClustering
 
 import time
 
-class Projection_2(nn.Module):
+# Model based on RegHD application for Single model regression -> No comparing which cluster
+
+class Projection_2(nn.Module): 
+    """Random Projection Class in case of changing as part of the encoding method"""
 
     __constants__ = ["in_features", "out_features"]
     in_features: int
@@ -63,165 +62,103 @@ class RegHD_AR(nn.Module):
     def __init__(self, size, d, models, number_ts, **kwargs):
         super(RegHD_AR, self).__init__()
 
-        self.size = size
-        self.d = d
+        self.size = size # Past samples
+        self.d = d # dimension of the hypervector
         self.lr = kwargs['opt'].learning_rate # alpha
         self.opt = kwargs['opt']
-        self.project = Projection_2(self.size, d, dtype=torch.float32) # 5 features, 10000 dimensions = hypervectors like weights?
+        self.project = Projection_2(self.size, d, dtype=torch.float32) # size features to d dimensions = hypervectors like weights?
         self.project.weight.data.normal_(0, 1) # Normal distributions mean=0.0, std=1.0
         self.bias = nn.parameter.Parameter(torch.empty(d, self.size), requires_grad=False)
         self.bias.data.uniform_(0, 2 * math.pi) # bias
         self.kwargs = kwargs
-        """self.covarianceMatrix = {}
-        for i in range(number_ts):
-            self.covarianceMatrix[i] = 0.1*torch.eye(self.d) # Process noise covariance matrix"""
-        self.covarianceMatrix = 0.1*torch.eye(self.d)
-        """self.alpha = {}
-        for i in range(number_ts):
-            self.alpha[i] = torch.zeros(self.d, 1) # Initial state estimate"""
-        self.alpha = torch.stack([torch.zeros(d, 1) for _ in range(self.opt.models)])
-        self.var = [0]*self.opt.models
+        self.covarianceMatrix = 0.1*torch.eye(self.d) # Only need 1 grid for covariance values in each sensor
+        self.alpha = torch.zeros(d, 1) # Weight hypervector
+        self.var = 0 # Variance in original samples
         self.current_ts = None
-        self.cluster = torch.stack([torch.zeros(d) for _ in range(self.opt.models)])
-        self.last_cluster = 0
-        self.min = 1
 
     def hard_quantize(self, hv):
-        #hv = (hv+self.size)/((self.size)*(2**(1-self.opt.hd_representation)))
+        """Function that returns the hapervector to the specified # of bits"""
+
+        # Using positives and negatives numbers
         hv = ((hv)*(2**(self.opt.hd_representation-1)))/self.size
         hv = torch.tensor(hv // 1 + 2 ** (hv > 0) - 1, dtype = torch.int8)
+
+        # Using only positives:
+        # hv = (hv+self.size)/((self.size)*(2**(1-self.opt.hd_representation)))
+        # hv = torch.floor(hv)
+
         return hv
     
-    """def flip_bits(self, enc):
-        total_bits = self.d * self.opt.hd_representation
-        flip_positions = np.random.choice(total_bits, int(self.opt.flipping_rate * total_bits), replace=False)
-        for pos in flip_positions:
-            value = list(format(int(enc[pos//self.opt.hd_representation]), 'b').rjust(self.opt.hd_representation, '0'))
-            if(value[pos % self.opt.hd_representation] == '0'):
-                value[pos % self.opt.hd_representation] = '1'
-            else:
-                value[pos % self.opt.hd_representation] = '0'
-            value = "".join(value)
-            enc[pos//self.opt.hd_representation] = int(value,2)
-        return enc"""
-    
-    def encode(self, x, **kwargs): # encoding a single value TENSOR
-        #x_2 = x * self.alpha[kwargs['ts']]
+    def encode(self, x, **kwargs): # encoding a single value TENSOR of size "size"
         enc = self.project(torch.reshape(x, (1, self.size)))
         enc = torch.cos(enc + self.bias) * torch.sin(enc) 
-        # return self.hard_quantize(multiset(torch.transpose(enc, 0, 1))) <-- Original with RegHD
         enc = self.hard_quantize(multiset(torch.transpose(enc, 0, 1)))
-        #if self.opt.flipping_rate > 0:
-            #enc = self.flip_bits(enc)
-        enc = torch.tensor(torch.reshape(enc, (1, self.d)), dtype=torch.float32)
+        enc = torch.reshape(enc, (1, self.d))
         return enc
 
 
-    def model_update(self, x, y, **kwargs): # update # y = no hv
+    def model_update(self, x, y, **kwargs): # update weights, variance and covariance matrix
 
         if(self.current_ts != kwargs['ts']):
             self.current_ts = kwargs['ts']
-            self.covarianceMatrix = 0.1*torch.eye(self.d)
+            self.covarianceMatrix = 0.1*torch.eye(self.d) # Unique for each time series
 
-        model_result, enc, index, novel = self(x, ts = kwargs['ts'])
-
-        if novel and self.last_cluster < self.opt.models:
-            self.cluster[self.last_cluster] += enc[0]
-            #self.cluster[self.last_cluster] = self.hard_quantize(self.cluster[self.last_cluster])
-            print(f"New model {self.last_cluster} in ts {kwargs['ts']}")
-            self.last_cluster += 1
-        else:
-            self.cluster[index] += enc[0]
-            self.cluster[index] = self.cluster[index] // 2
-            #self.cluster[index] = self.hard_quantize(self.cluster[index])
-
+        model_result, enc = self(x, ts = kwargs['ts']) # Prediction
         enc =  torch.tensor(enc, dtype = torch.float32)
         x = torch.reshape(torch.tensor(x, dtype = torch.float32), (1, self.size))
-        const = torch.matmul(self.covarianceMatrix,torch.transpose(enc, 0, 1))
+        const = torch.matmul(self.covarianceMatrix,torch.transpose(enc, 0, 1)) # Repeating value
         complete = torch.matmul(enc,const)
-        #const = torch.matmul(enc, torch.matmul(self.covarianceMatrix, torch.transpose(enc, 0, 1)))
-        self.var[index] = (self.opt.alpha * self.var[index]) + (1-self.opt.alpha) * torch.var(x)
-        #self.alpha[kwargs['ts']] += torch.transpose(float(self.lr) * A_t * enc, 0, 1)
-        A_t = float(y - model_result)
-        if (float(complete + self.var[index]) >= 0.001 or float(complete + self.var[index]) <= -0.001):
-        #if(torch.var(x) >= 0.0001 or torch.var(x) <= -0.0001):
-            G_t = const / (complete + self.var[index])
-    
-            
-        #for i in range(kwargs['ts'], len(self.alpha)):
-            self.alpha[index] += G_t*A_t*self.opt.learning_rate
-            #self.alpha += (torch.transpose(enc, 0, 1) / (const + torch.var(x)))*A_t*self.lr
-            #self.alpha[kwargs['ts']] += (torch.transpose(enc, 0, 1)/self.var)*A_t
-            #self.alpha[kwargs['ts']] += torch.transpose(float(self.lr) * A_t * enc, 0, 1)
-            #self.alpha += torch.transpose(float(self.lr) * A_t * ((enc) / self.var), 0, 1)
-            #self.covarianceMatrix -= torch.matmul(torch.matmul(G_t, enc), self.covarianceMatrix)
+        self.var = (self.opt.alpha * self.var) + (1-self.opt.alpha) * torch.var(x) # MA for variance
+        A_t = float(y - model_result) # Innovation
+        if (float(complete + self.var) >= 0.001 or float(complete + self.var) <= -0.001): # Make sure its within reasonable values
+            G_t = const / (complete + self.var) # Kalman Gain
+
+            # Update
+            self.alpha += G_t*A_t*self.opt.learning_rate 
             self.covarianceMatrix -= torch.matmul(G_t, torch.transpose(const, 0, 1))
     
-    def forward(self, x, **kwargs): # With weights x: array of values
+    def forward(self, x, **kwargs): # With weights x: array of values compute the prediction
         x = torch.tensor(x.reshape((self.size, 1)), dtype = torch.float32)    
-        enc = self.encode(x, ts = kwargs['ts'])
-
-        try:
-            #cluster = torch.tensor(cluster)
-            # sim = [cos_similarity(enc, self.cluster[i]) for i in range(len(self.cluster))]
-            sim = cos_similarity(enc, self.cluster)
-            novel = max(sim[0]) < 1-self.opt.novelty
-            index = int((sim == max(sim[0]))[0].nonzero(as_tuple=True)[0])
-            if max(sim[0]) < self.min and max(sim[0]) > 0:
-                self.min = float(max(sim[0]))
-        except:
-            index = 0
-            novel = True
-
+        enc = self.encode(x, ts = kwargs['ts']) # encode     
+        model_result = F.linear(enc.type(torch.FloatTensor), torch.transpose(self.alpha.type(torch.FloatTensor), 0, 1))
+        # prediction
         
-        
-        #enc = self.encode(x, ts = kwargs['ts'])
-        #enc = torch.reshape(enc, (1, self.d))
-        model_result = F.linear(enc.type(torch.FloatTensor), torch.transpose(self.alpha[index].type(torch.FloatTensor), 0, 1))
-        #model_result = torch.sum(enc)
-        #self.alpha[kwargs['ts']] = torch.reshape(self.alpha[kwargs['ts']], (self.size, self.d))
-        
-        return model_result, enc, index, novel
+        return model_result, enc
 
     def train(self, sets_training, matrix_1_norm, matrix_1_norm_org, y, epochs, sets_cv):
 
-        for _ in range(epochs): # Number of iterations for all the samples
+        for _ in range(epochs): # Number of iterations for all the samples set to 1
             
-            for n in tqdm(range(matrix_1_norm.shape[0])):
+            for n in tqdm(range(matrix_1_norm.shape[0])): # For each ts
                 samples = matrix_1_norm[n, :]
             
-                for i in (sets_training):
+                for i in (sets_training): # For each set in the rolling window
                     
-                    sample = samples[i:i+self.size]
-                    """if np.isnan(samples[i+self.size]):
-                        predictions_testing, enc, hvs = self(sample, ts = n)
-                        samples[i+self.size] = predictions_testing"""
+                    sample = samples[i:i+self.size] 
                     label = torch.tensor(samples[i+self.size])
 
                     self.model_update(sample, label, ts = n, time = i) # Pass input and label to train
                     
-                    predictions_testing, enc, index, novel = self(sample, ts = n)
+                    predictions_testing, enc = self(sample, ts = n)
                     y[n, i+self.size] = float(predictions_testing)
                 
                 if (n % self.opt.print_freq == 0):
                     pred, labels_full = self.test(sets_cv, matrix_1_norm, matrix_1_norm_org, y)
                     print(f"\nCross Validation root mean squared error of {(mean_squared_error(labels_full, pred, squared=False)):.3f}")
-                    #print(f"Self.var = {self.var}")
     
     def test(self, sets_testing, matrix_1_norm, matrix_1_norm_org, y, cv = True):
         pred = []
         labels_full = []
-        for i in (sets_testing):
-            samples = matrix_1_norm_org[:, i:i+self.size]
-            labels = matrix_1_norm[:, i+self.size]
-            for n in range(samples.shape[0]):
-                sample = samples[n, :]
-                if(np.isnan(labels[n])):
-                    predictions, enc = self(sample, ts = n)
-                    matrix_1_norm[n, i+self.size] = predictions
-                label = torch.tensor(labels[n])
+        for n in range(matrix_1_norm.shape[0]): # For each ts
+            samples = matrix_1_norm[n, :]
+        
+            for i in (sets_testing): # For each set in the rolling window
+                
+                sample = samples[i:i+self.size] 
+                label = torch.tensor(samples[i+self.size])
+
                 # Pass samples from test to model (forward function)
-                predictions, enc, index, novel= self(sample, ts = n)
+                predictions, enc = self(sample, ts = n)
                 pred.append(float(predictions))
                 y[n, i+self.size] = float(predictions)
                 labels_full.append(matrix_1_norm_org[n, i+self.size])
@@ -232,25 +169,6 @@ class RegHD_AR(nn.Module):
             return error
         
         return pred, labels_full
-    
-    def test2(self, start_testing, matrix_1_norm, number_predictions):
-        y = np.zeros((matrix_1_norm.shape[0], number_predictions+self.size))
-        labels_full = matrix_1_norm[:, start_testing+self.size:]
-        y[:, :self.size] = matrix_1_norm[:, start_testing:start_testing+self.size]
-        for i in tqdm(range(number_predictions)):
-            samples = y[:, i:i+self.size]
-            pred = []
-            for n in range(samples.shape[0]):
-                sample = torch.tensor(samples[n, :])
-                # Pass samples from test to model (forward function)
-                predictions = self.forward(sample)
-                pred.append(float(predictions[0]))
-            y[:, self.size+i] = pred
-
-        print(
-            f"Testing root mean squared error of testing {(mean_squared_error(labels_full.flatten(), y[:, -number_predictions:].flatten(), squared=False)):.3f}")
-        
-        return y, labels_full
 
 
 def Return_Model(size, d, models, number_ts, opt):
