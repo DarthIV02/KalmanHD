@@ -17,7 +17,8 @@ Steps to setup the code:
       ```
 
 Important files:
-   - Main.py is the main script that runs and tests each model.
-   - The scripts for the different our model and the different baselines can be found in the folder models.
+   - *main.py* is the main script that runs and tests each model.
+   - The scripts for our model and the different baselines can be found in the folder *models*.
+   - Inside the *Stuff* folder you can finde the *DatasetLoader.py* script, which loads and initializes the datasets.
 
-To run all of the models in all of the datasets for each model run **run_exp.sh**, for missing values test run **run_exp_missing.sh** and for gaussian noise on the datasets run ****run_exp_gaussian.sh**
+To run all of the models in all of the datasets for each model run **run_exp.sh**, for missing values test run **run_exp_missing.sh** and for gaussian noise on the datasets run **run_exp_gaussian.sh**
