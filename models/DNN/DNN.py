@@ -2,7 +2,7 @@ from keras.layers import Input, Dense, LSTM, multiply, concatenate, Activation, 
 from keras.layers import Dense, Dropout, Flatten, BatchNormalization, Input
 from keras.layers import Conv1D, BatchNormalization, GlobalAveragePooling1D, Permute, Dropout
 from keras.models import Sequential, Model
-from sktime_dl.utils.layer_utils import AttentionLSTM
+from Stuff.sktime_dl.utils.layer_utils import AttentionLSTM
 from sklearn.metrics import mean_squared_error
 
 import numpy as np
@@ -86,28 +86,7 @@ def Return_Model(size):
     model_noise_resilience = generate_model(size)
     return model_noise_resilience
 
-"""def flip_bits(x, flipping_rate, seq_lengt):
-        if flipping_rate > 0:
-            total_bits = seq_lengt * 64
-            flip_positions = np.random.choice(total_bits, int(flipping_rate * total_bits), replace=False)
-            for pos in flip_positions:
-                #value = struct.pack('!f', x[pos//64])
-                #value = list(''.join(format(c, '016b') for c in value)) # .rjust(64, '0')
-                [d] = struct.unpack(">Q", struct.pack(">d",  x[pos//64]))
-                value = list('{:064b}'.format(d))
-                if(value[pos % 64] == '0'):
-                    value[pos % 64] = '1'
-                else:
-                    value[pos % 64] = '0'
-                value = "".join(value)
-                value = decode('%%0%dx' % (8 << 1) % int(value, 2), 'hex')[-8:]
-                if (struct.unpack('>d', value)[0] > 0.0000001 and struct.unpack('>d', value)[0] < 1000000):
-                    x[pos//64] = np.float64(struct.unpack('>d', value)[0])
-                else:
-                    x[pos//64] = np.float64(0.1)
-        return x"""
-
-def Train_Model(model, matrix, sets_training, retraining, dataset, size, epochs, flipping_rate, noise="None", level=0):
+def Train_Model(model, matrix, sets_training, retraining, dataset, size, epochs, noise="None", level=0):
 
     if retraining:
         model.load_weights(f"trained_models/dnn-{dataset}_{size}_{epochs}_{noise}_{level}.h5")
@@ -143,7 +122,7 @@ def Train_Model(model, matrix, sets_training, retraining, dataset, size, epochs,
     return model
 
 
-def Test_Model(model, matrix, sets_testing, size, flipping_rate):
+def Test_Model(model, matrix, sets_testing, size):
 
     dif_dnn = []
 
@@ -155,10 +134,11 @@ def Test_Model(model, matrix, sets_testing, size, flipping_rate):
             labels = matrix[:, i+size]
             for n in range(samples.shape[0]):
                 sample = samples[n, :]
+                sample2 = sample.reshape(1, 1, sample.shape[0])
                 #sample2 = flip_bits(sample, flipping_rate, size).reshape(1, 1, sample.shape[0])
 
                 # Pass samples from test to model (forward function)
-                predictions = model.predict(sample)[0][0]
+                predictions = model.predict(sample2)[0][0]
                 pred.append(predictions)
                 labels_full.append(labels[n])
                 dif_dnn.append(np.absolute(labels[n]-predictions))
