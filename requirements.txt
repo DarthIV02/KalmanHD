@@ -60,7 +60,6 @@ pytesseract==0.3.10
 python-slugify==6.1.2
 pytorch-lightning==1.5.6
 PyWavelets==1.4.1
-pywin32==302
 PyYAML==6.0
 qtconsole==5.3.2
 QtPy==2.2.1
