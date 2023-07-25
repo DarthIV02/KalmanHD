@@ -142,7 +142,7 @@ class RegHD_AR(nn.Module):
     def test(self, sets_testing, matrix_1_norm, matrix_1_norm_org, y, cv = True):
         pred = []
         labels_full = []
-        for n in tqdm(range(matrix_1_norm.shape[0])): # For each ts
+        for n in range(matrix_1_norm.shape[0]): # For each ts
             samples = matrix_1_norm[n, :]
         
             for i in (sets_testing): # For each set in the rolling window
