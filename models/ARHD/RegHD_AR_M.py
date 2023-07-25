@@ -22,7 +22,7 @@ import torch.utils.data as data
 from sklearn.metrics import mean_squared_error
 from tqdm import tqdm
 
-from torchhd import functional, embeddings, cos_similarity, bind, multiset, hard_quantize, permute, bundle
+from torchhd import functional, embeddings, bind, multiset, hard_quantize, permute, bundle
 
 from scipy.special import softmax
 
@@ -75,7 +75,8 @@ class RegHD_AR(nn.Module):
         """self.covarianceMatrix = {}
         for i in range(number_ts):
             self.covarianceMatrix[i] = 0.1*torch.eye(self.d) # Process noise covariance matrix"""
-        self.covarianceMatrix = 0.1*torch.eye(self.d)
+        self.covarianceMatrix = torch.stack([0.1*torch.eye(self.d) for _ in range(self.opt.models)])
+        #self.covarianceMatrix = 0.1*torch.eye(self.d)
         """self.alpha = {}
         for i in range(number_ts):
             self.alpha[i] = torch.zeros(self.d, 1) # Initial state estimate"""
@@ -85,6 +86,11 @@ class RegHD_AR(nn.Module):
         self.cluster = torch.stack([torch.zeros(d) for _ in range(self.opt.models)])
         self.last_cluster = 0
         self.min = 1
+        self.mean_difference = [0]*self.opt.models
+        self.standard_difference = [0]*self.opt.models
+        self.num_hv = [0]*self.opt.models
+        self.p = [0]*self.opt.models
+        self.cos = nn.CosineSimilarity()
 
     def hard_quantize(self, hv):
         #hv = (hv+self.size)/((self.size)*(2**(1-self.opt.hd_representation)))
@@ -117,27 +123,76 @@ class RegHD_AR(nn.Module):
         return enc
 
 
+    def prototypeUpdate(self, index, enc, sim):
+        self.cluster[index] += enc[0]
+        self.mean_difference[index] = (1-self.opt.alpha)*self.mean_difference[index] + self.opt.alpha*sim
+        self.standard_difference[index] = (1-self.opt.alpha)*self.standard_difference[index] + self.opt.alpha*abs(sim-self.mean_difference[index])
+        self.num_hv[index] += 1
+        self.p[index] = max(self.p) + 1
+        #self.cluster[index] = self.hard_quantize(self.cluster[index])
+    
+    def merge_model(self, index_sub, index_into):
+        total = self.num_hv[index_into] + self.num_hv[index_sub]
+        self.cluster[index_into] += self.cluster[index_sub]
+        #self.cluster[index_into] = self.cluster[index_into] // 2
+        self.mean_difference[index_into] = (self.num_hv[index_into]/total)*self.mean_difference[index_into] + (self.num_hv[index_sub]/total)*self.mean_difference[index_sub]
+        self.standard_difference[index_into] = (self.num_hv[index_into]/total)*self.standard_difference[index_into] + (self.num_hv[index_sub]/total)*self.standard_difference[index_sub]
+        self.alpha[index_into] = (self.num_hv[index_into]/total)*self.alpha[index_into] + (self.num_hv[index_sub]/total)*self.alpha[index_sub]
+        self.var[index_into] = (self.num_hv[index_into]/total)*self.var[index_into] + (self.num_hv[index_sub]/total)*self.var[index_sub]
+        self.covarianceMatrix[index_into] = (self.num_hv[index_into]/total)*self.covarianceMatrix[index_into] + (self.num_hv[index_sub]/total)*self.covarianceMatrix[index_sub]
+        self.num_hv[index_into] += self.num_hv[index_sub]
+        self.p[index_into] = max(self.p) + 1
+    
     def model_update(self, x, y, **kwargs): # update # y = no hv
 
         if(self.current_ts != kwargs['ts']):
             self.current_ts = kwargs['ts']
-            self.covarianceMatrix = 0.1*torch.eye(self.d)
+            self.covarianceMatrix[:] = 0.1*torch.eye(self.d)
 
-        model_result, enc, index, novel = self(x, ts = kwargs['ts'])
+        model_result, enc, index, sim = self(x, ts = kwargs['ts'])
 
-        if novel and self.last_cluster < self.opt.models:
-            self.cluster[self.last_cluster] += enc[0]
-            #self.cluster[self.last_cluster] = self.hard_quantize(self.cluster[self.last_cluster])
-            print(f"New model {self.last_cluster} in ts {kwargs['ts']}")
-            self.last_cluster += 1
+        novel = True if sim <= (self.mean_difference[index] - self.opt.novelty*self.standard_difference[index]) else False
+
+        if novel and self.num_hv[index] > 1:
+            """if self.last_cluster < self.opt.models:
+                self.cluster[self.last_cluster] += enc[0]
+                #self.cluster[self.last_cluster] = self.hard_quantize(self.cluster[self.last_cluster])
+                self.last_cluster += 1
+            else:"""
+            indices = [i for i, v in enumerate(self.num_hv) if v == min(self.num_hv)]
+            p_current = [self.p[i] for i in indices]
+            index_sub = [indices[x] for x in range(len(indices)) if p_current[x] == min(p_current)][0]
+            #index_sub = self.p.index(min(self.p))
+            #print(f"New model {index_sub} in ts {kwargs['ts']}")
+            if self.last_cluster < self.opt.models:
+                self.last_cluster += 1
+                self.prototypeUpdate(index_sub, enc, sim)
+            else:
+                similarity = self.cos(self.cluster[index_sub], self.cluster)
+                similarity[index_sub] = 0
+                index_into = torch.argmax(similarity)
+                if index_into != index_sub:
+                    self.merge_model(index_sub, index_into)
+                    self.cluster[index_sub] = enc[0]
+                    self.mean_difference[index_sub] = 0
+                    self.standard_difference[index_sub] = 0
+                    self.num_hv[index_sub] = 1
+                    self.p[index_sub] = max(self.p) + 1
+                    self.alpha[index_sub] = torch.zeros(self.d, 1)
+                    self.var[index_sub] = 0
+                    self.covarianceMatrix[index_sub] = 0.1*torch.eye(self.d)
+                else:
+                    self.prototypeUpdate(index, enc, sim)
         else:
-            self.cluster[index] += enc[0]
-            self.cluster[index] = self.cluster[index] // 2
-            #self.cluster[index] = self.hard_quantize(self.cluster[index])
+            self.prototypeUpdate(index, enc, sim)
+            #if self.num_hv[index] > 1:
+            #    self.cluster[index] = self.cluster[index] // 2
+        #else:
+        #    self.prototypeUpdate(index, enc, sim)
 
         enc =  torch.tensor(enc, dtype = torch.float32)
         x = torch.reshape(torch.tensor(x, dtype = torch.float32), (1, self.size))
-        const = torch.matmul(self.covarianceMatrix,torch.transpose(enc, 0, 1))
+        const = torch.matmul(self.covarianceMatrix[index],torch.transpose(enc, 0, 1))
         complete = torch.matmul(enc,const)
         #const = torch.matmul(enc, torch.matmul(self.covarianceMatrix, torch.transpose(enc, 0, 1)))
         self.var[index] = (self.opt.alpha * self.var[index]) + (1-self.opt.alpha) * torch.var(x)
@@ -155,7 +210,7 @@ class RegHD_AR(nn.Module):
             #self.alpha[kwargs['ts']] += torch.transpose(float(self.lr) * A_t * enc, 0, 1)
             #self.alpha += torch.transpose(float(self.lr) * A_t * ((enc) / self.var), 0, 1)
             #self.covarianceMatrix -= torch.matmul(torch.matmul(G_t, enc), self.covarianceMatrix)
-            self.covarianceMatrix -= torch.matmul(G_t, torch.transpose(const, 0, 1))
+            self.covarianceMatrix[index] -= torch.matmul(G_t, torch.transpose(const, 0, 1))
     
     def forward(self, x, **kwargs): # With weights x: array of values
         x = torch.tensor(x.reshape((self.size, 1)), dtype = torch.float32)    
@@ -164,16 +219,17 @@ class RegHD_AR(nn.Module):
         try:
             #cluster = torch.tensor(cluster)
             # sim = [cos_similarity(enc, self.cluster[i]) for i in range(len(self.cluster))]
-            sim = cos_similarity(enc, self.cluster)
-            novel = max(sim[0]) < 1-self.opt.novelty
-            index = int((sim == max(sim[0]))[0].nonzero(as_tuple=True)[0])
-            if max(sim[0]) < self.min and max(sim[0]) > 0:
-                self.min = float(max(sim[0]))
+            
+            sim = self.cos(enc[0], self.cluster)
+            #novel = max(sim[0]) < 1-self.opt.novelty
+            #index = int((sim == max(sim)).nonzero(as_tuple=True)[0])
+            index = torch.argmax(sim)
+            if max(sim) < self.min and max(sim) > 0:
+                self.min = float(max(sim))
         except:
             index = 0
-            novel = True
-
-        
+            sim = [0]
+            #novel = True
         
         #enc = self.encode(x, ts = kwargs['ts'])
         #enc = torch.reshape(enc, (1, self.d))
@@ -181,13 +237,14 @@ class RegHD_AR(nn.Module):
         #model_result = torch.sum(enc)
         #self.alpha[kwargs['ts']] = torch.reshape(self.alpha[kwargs['ts']], (self.size, self.d))
         
-        return model_result, enc, index, novel
+        return model_result, enc, index, max(sim)#, novel
 
     def train(self, sets_training, matrix_1_norm, matrix_1_norm_org, y, epochs, sets_cv):
 
         for _ in range(epochs): # Number of iterations for all the samples
             
             for n in tqdm(range(matrix_1_norm.shape[0])):
+            
                 samples = matrix_1_norm[n, :]
             
                 for i in (sets_training):
@@ -196,11 +253,11 @@ class RegHD_AR(nn.Module):
                     """if np.isnan(samples[i+self.size]):
                         predictions_testing, enc, hvs = self(sample, ts = n)
                         samples[i+self.size] = predictions_testing"""
-                    label = torch.tensor(samples[i+self.size])
+                    label = torch.tensor(samples[self.size])
 
                     self.model_update(sample, label, ts = n, time = i) # Pass input and label to train
                     
-                    predictions_testing, enc, index, novel = self(sample, ts = n)
+                    predictions_testing, enc, index, sim = self(sample, ts = n)
                     y[n, i+self.size] = float(predictions_testing)
                 
                 if (n % self.opt.print_freq == 0):
@@ -221,7 +278,7 @@ class RegHD_AR(nn.Module):
                     matrix_1_norm[n, i+self.size] = predictions
                 label = torch.tensor(labels[n])
                 # Pass samples from test to model (forward function)
-                predictions, enc, index, novel= self(sample, ts = n)
+                predictions, enc, index, sim = self(sample, ts = n)
                 pred.append(float(predictions))
                 y[n, i+self.size] = float(predictions)
                 labels_full.append(matrix_1_norm_org[n, i+self.size])
