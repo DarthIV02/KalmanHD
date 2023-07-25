@@ -122,7 +122,7 @@ def main():
         print("Using CPU device")
     
     # File to save the results
-    csv_file = 'results_Models.csv'
+    csv_file = 'results2.csv'
 
     if opt.model == "RegHD":
         from models.RegHD.RegHD import Return_Model

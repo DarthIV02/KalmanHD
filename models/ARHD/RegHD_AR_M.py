@@ -78,15 +78,22 @@ class RegHD_AR(nn.Module):
 
     def hard_quantize(self, hv):
         """Function that returns the hapervector to the specified # of bits"""
+
+        # Using positives and negatives numbers
         hv = ((hv)*(2**(self.opt.hd_representation-1)))/self.size
         hv = torch.tensor(hv // 1 + 2 ** (hv > 0) - 1, dtype = torch.int8)
+
+        # Using only positives:
+        # hv = (hv+self.size)/((self.size)*(2**(1-self.opt.hd_representation)))
+        # hv = torch.floor(hv)
+
         return hv
     
     def encode(self, x, **kwargs): # encoding a single value TENSOR of size "size"
         enc = self.project(torch.reshape(x, (1, self.size)))
         enc = torch.cos(enc + self.bias) * torch.sin(enc) 
         enc = self.hard_quantize(multiset(torch.transpose(enc, 0, 1)))
-        enc = torch.tensor(torch.reshape(enc, (1, self.d)), dtype=torch.float32)
+        enc = torch.reshape(enc, (1, self.d))
         return enc
 
 
