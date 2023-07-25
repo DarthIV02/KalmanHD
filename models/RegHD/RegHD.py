@@ -387,12 +387,14 @@ class RegHD_SpectralClustering (RegHD):
 
 def Return_Model(size, d, models, number_ts, opt):
 
-    if(opt.clustering == "none"):
+    """if(opt.clustering == "none"):
         model_hd = RegHD(size, d, models, number_ts, opt = opt)  # 1 class, 5
     elif(opt.clustering == "kmeans"):
         model_hd = RegHD_Kmeans(size, d, models, number_ts, opt = opt)
     elif(opt.clustering == "spectral_clustering"):
-        model_hd = RegHD_SpectralClustering(size, d, models, number_ts, opt = opt)
+        model_hd = RegHD_SpectralClustering(size, d, models, number_ts, opt = opt)"""
+
+    model_hd = RegHD(size, d, models, number_ts, opt = opt)
 
     model_hd.lr = opt.learning_rate
 
