@@ -18,7 +18,7 @@ import torch.utils.data as data
 from sklearn.metrics import mean_squared_error
 from tqdm import tqdm
 
-from torchhd import functional, embeddings, cos_similarity, bind, multiset, hard_quantize, permute, bundle
+from torchhd import functional, embeddings, bind, multiset, hard_quantize, permute, bundle
 
 from scipy.special import softmax
 

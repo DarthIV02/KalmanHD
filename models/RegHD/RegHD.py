@@ -189,7 +189,7 @@ def linear_encoding(self, x):
     sample_hv = multiset(sample_hv)
     return hard_quantize(sample_hv)
 
-def yule_walker_update(self, x, y, **kwargs):
+"""def yule_walker_update(self, x, y, **kwargs):
     model_result, enc, hvs = self(x, ts = kwargs['ts'])
     if (np.isnan(y)):
         y = model_result
@@ -223,9 +223,9 @@ def yule_walker_update(self, x, y, **kwargs):
     confidence = np.transpose(softmax(cos_similarity(self.cluster, enc)))
     center = [num.item() for num in confidence[0]].index(max(confidence[0]).item())
     self.cluster[center] = self.cluster[center] + (1-max(confidence[0])) * enc
-    return center
+    return center"""
 
-def KalmanFilterUpdate(self, x, y, **kwargs): # First test
+"""def KalmanFilterUpdate(self, x, y, **kwargs): # First test
     model_result, enc = self(x, ts = kwargs['ts'])
     if (np.isnan(y)):
         y = model_result
@@ -248,9 +248,9 @@ def KalmanFilterUpdate(self, x, y, **kwargs): # First test
     confidence = np.transpose(softmax(cos_similarity(self.cluster, enc)))
     center = [num.item() for num in confidence[0]].index(max(confidence[0]).item())
     self.cluster[center] = self.cluster[center] + (1-max(confidence[0])) * enc
-    return center
+    return center"""
 
-def KalmanFilterUpdate2(self, x, y, **kwargs): # If values (original) are multiplied by alpha
+"""def KalmanFilterUpdate2(self, x, y, **kwargs): # If values (original) are multiplied by alpha
     model_result, enc = self(x, ts = kwargs['ts'])
     if (np.isnan(y)):
         y = model_result
@@ -266,9 +266,9 @@ def KalmanFilterUpdate2(self, x, y, **kwargs): # If values (original) are multip
     confidence = np.transpose(softmax(cos_similarity(self.cluster, enc)))
     center = [num.item() for num in confidence[0]].index(max(confidence[0]).item())
     self.cluster[center] = self.cluster[center] + (1-max(confidence[0])) * enc
-    return center
+    return center"""
 
-def KalmanFilterUpdate3(self, x, y, **kwargs): # Where alpha is multiplied by hypervectors in a single pass
+"""def KalmanFilterUpdate3(self, x, y, **kwargs): # Where alpha is multiplied by hypervectors in a single pass
     model_result, enc, hvs = self(x, ts = kwargs['ts'])
     enc = enc[0]
     if (np.isnan(y)):
@@ -285,7 +285,7 @@ def KalmanFilterUpdate3(self, x, y, **kwargs): # Where alpha is multiplied by hy
     confidence = np.transpose(softmax(cos_similarity(self.cluster, enc)))
     center = [num.item() for num in confidence[0]].index(max(confidence[0]).item())
     self.cluster[center] = self.cluster[center] + (1-max(confidence[0])) * enc
-    return center
+    return center"""
 
 class RegHD_Kmeans(RegHD):
     def __init__(self, size, d, models, number_ts, **kwargs):
@@ -337,7 +337,7 @@ class RegHD_Kmeans(RegHD):
 
             print(f"Training root mean squared error of {(mean_squared_error(labels_full, pred, squared=False)):.3f}")
 
-class RegHD_SpectralClustering (RegHD):
+"""class RegHD_SpectralClustering (RegHD):
     def __init__(self, size, d, models, number_ts, **kwargs):
         super().__init__(size, d, models, number_ts, **kwargs)
         self.cluster_model = None
@@ -383,7 +383,7 @@ class RegHD_SpectralClustering (RegHD):
                 for n in range(samples.shape[0]):
                     label = torch.tensor(labels[n])
                     item = (samples.shape[0]*time) + n
-                    self.model_update(encoded[item], label, self.cluster_model[item]) # Pass input and label to train
+                    self.model_update(encoded[item], label, self.cluster_model[item]) # Pass input and label to train"""
 
 def Return_Model(size, d, models, number_ts, opt):
 
