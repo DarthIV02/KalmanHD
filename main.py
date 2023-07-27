@@ -46,7 +46,7 @@ def parse_option():
     parser.add_argument('--novelty', type=float, default=0.6,
                         help='cosine similarity difference for a timeseries to be considered new')
     
-    parser.add_argument('--model', type=str, default='KalmanHD', 
+    parser.add_argument('--model', type=str, default='DNN', 
                         choices=['RegHD', 'VAE', 'DNN', 'KalmanFilter', 'KalmanHD'],
                         help='Model to test')
     
@@ -122,7 +122,7 @@ def main():
         print("Using CPU device")
     
     # File to save the results
-    csv_file = 'results2.csv'
+    csv_file = 'results5.csv'
 
     if opt.model == "RegHD":
         from models.RegHD.RegHD import Return_Model
@@ -159,7 +159,7 @@ def main():
 
     # Write results
     
-    add_value_to_csv(csv_file, opt.dataset, opt.model, opt.models, opt.novelty, opt.learning_rate, opt.hd_representation, error)
+    add_value_to_csv(csv_file, opt.dataset, opt.model, "Missing", opt.p, opt.learning_rate, opt.hd_representation, error)
 
     # Visualize results
 
@@ -192,7 +192,7 @@ def add_value_to_csv(csv_file, ts, model, noise, noiseVol, lr, hd_bites, mae):
             data = list(reader)
     except FileNotFoundError:
         # If the file doesn't exist, create a new one with the header
-        data = [['TimeSeries Dataset', 'Model', 'Models', 'Novelty', 'Lr', 'hd_bites', 'MAE']]
+        data = [['TimeSeries Dataset', 'Model', 'Noise', 'Noise_Vol', 'Lr', 'hd_bites', 'MAE']]
     
     # Add the value to the data
     data.append([ts, model, noise, noiseVol, lr, hd_bites, mae])

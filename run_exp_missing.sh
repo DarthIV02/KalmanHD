@@ -45,8 +45,8 @@ do
             hd_representation=1
         fi
 
-        # python3 main.py --dataset "$dataset" --learning_rate "$learning_rate" --hd_representation "$hd_representation" --p "$noise";
+        python3 main.py --dataset "$dataset" --learning_rate "$learning_rate" --hd_representation "$hd_representation" --p "$noise" --model KalmanHD --dimension_hd 1000;
 
-        python3 main.py --model DNN --dataset "$dataset" --p "$noise";
+        # python3 main.py --model DNN --dataset "$dataset" --p "$noise";
     done
 done

@@ -1,0 +1,6 @@
+TimeSeries Dataset,Model,Models,Novelty,Lr,hd_bites,MAE
+SanFranciscoTraffic,KalmanHD,1,0.6,0.01,4,0.14018809857066086
+MetroInterstateTrafficVolume,KalmanHD,1,0.6,0.1,2,0.15751475689242975
+GuangzhouTraffic,KalmanHD,1,0.6,0.01,4,0.1012511118548652
+EnergyConsumptionFraunhofer,KalmanHD,1,0.6,0.01,4,0.11126832721730935
+ElectricityLoadDiagrams,KalmanHD,1,0.6,0.01,1,0.08299261987157729
