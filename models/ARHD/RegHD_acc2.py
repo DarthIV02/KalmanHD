@@ -76,6 +76,8 @@ class RegHD_AR(nn.Module):
         self.alpha = torch.zeros(1, d) # Weight hypervector
         self.var = 0 # Variance in original samples
         self.current_ts = None
+        self.updateCov = True
+        self.past_sim = 0
 
     def hard_quantize(self, hv):
         """Function that returns the hapervector to the specified # of bits"""
@@ -108,9 +110,11 @@ class RegHD_AR(nn.Module):
 
     def model_update(self, x, y, **kwargs): # update weights, variance and covariance matrix
 
-        """if(self.current_ts != kwargs['ts']):
+        if(self.current_ts != kwargs['ts']):
             self.current_ts = kwargs['ts']
-            self.covarianceMatrix = torch.ones(self.d, self.d) # Unique for each time series"""
+            #self.covarianceMatrix = torch.ones(self.d, self.d) # Unique for each time series"""
+            self.updateCov = True
+            self.past_sim = 0
 
         model_result, enc = self(x, ts = kwargs['ts']) # Prediction
         #enc =  torch.tensor(enc, dtype = torch.float32)
@@ -124,7 +128,14 @@ class RegHD_AR(nn.Module):
 
             # Update
             self.alpha += G_t*A_t*self.opt.learning_rate
-            self.covarianceMatrix += hard_quantize(torch.mul(G_t, torch.reshape(const, (self.d, 1))))
+            if self.updateCov:
+                self.covarianceMatrix2 = self.covarianceMatrix + hard_quantize(torch.mul(G_t, torch.reshape(const, (self.d, 1))))
+                sim = torch.mean(torch.cosine_similarity(self.covarianceMatrix2, self.covarianceMatrix))
+                self.covarianceMatrix = self.covarianceMatrix2
+                if (sim > self.past_sim):
+                    self.past_sim = sim
+                else:
+                    self.updateCov = False
     
     def forward(self, x, **kwargs): # With weights x: array of values compute the prediction
         x = torch.tensor(x.reshape((self.size, 1)), dtype = torch.float32)    
