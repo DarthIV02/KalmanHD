@@ -39,7 +39,7 @@ def parse_option():
     parser.add_argument('--dimension_hd', type=int, default=1000,
                         help='number of dimensions in the hypervector')
     
-    parser.add_argument('--dataset', type=str, default='MetroInterstateTrafficVolume', 
+    parser.add_argument('--dataset', type=str, default='SanFranciscoTraffic', 
                         choices=['SanFranciscoTraffic', 'MetroInterstateTrafficVolume', 
                                  'GuangzhouTraffic', 'EnergyConsumptionFraunhofer', 'ElectricityLoadDiagrams'],
                         help='Dataset to initialize')
@@ -101,10 +101,11 @@ def main():
     matrix_1_norm_org = np.copy(matrix_1_norm)
     #sets = np.random.choice(matrix_1_norm.shape[1]-40, opt.num_timestamp, replace=False)
     #sets_training, sets_testing = sets[:int(len(sets)*.8)], sets[int(len(sets)*.8):]
-    sets_training = [i for i in range(int((matrix_1_norm.shape[1]-opt.size_of_sample)*0.5))]
+    # rolling window values for training, testing and cross validation
+    sets_training = [i for i in range(int((matrix_1_norm.shape[1]-opt.size_of_sample)*0.7))]
     print(len(sets_training))
-    sets_testing = [i for i in range(int((matrix_1_norm.shape[1]-opt.size_of_sample)*0.5), int((matrix_1_norm.shape[1]-opt.size_of_sample)*0.7))]
-    sets_cv = [i for i in range(int((matrix_1_norm.shape[1]-opt.size_of_sample)*0.7), int((matrix_1_norm.shape[1]-opt.size_of_sample)*0.8))]
+    sets_testing = [i for i in range(int((matrix_1_norm.shape[1]-opt.size_of_sample)*0.7), int((matrix_1_norm.shape[1]-opt.size_of_sample)*0.9))]
+    sets_cv = [i for i in range(int((matrix_1_norm.shape[1]-opt.size_of_sample)*0.9), (matrix_1_norm.shape[1]-opt.size_of_sample))]
     sets_missing = {}
     for i in range(matrix_1_norm.shape[0]):
         sets_missing[i] = []
@@ -145,7 +146,7 @@ def main():
 
     if opt.model == "KalmanHD":
         #from models.ARHD.RegHD_AR_M import Return_Model
-        from models.ARHD.RegHD_acc import Return_Model
+        from models.ARHD.RegHD_acc2 import Return_Model
         model = Return_Model(opt.size_of_sample, opt.dimension_hd, opt.models, matrix_1_norm.shape[0], opt)
         y = np.zeros((matrix_1_norm.shape))
         model.train(sets_training, matrix_1_norm, matrix_1_norm_org, y, opt.epochs, sets_cv)
