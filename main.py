@@ -13,13 +13,13 @@ import torch
 def parse_option():
     parser = argparse.ArgumentParser('argument for training')
 
-    parser.add_argument('--print_freq', type=int, default=100,
+    parser.add_argument('--print_freq', type=int, default=50,
                         help='print frequency')
     
     parser.add_argument('--epochs', type=int, default=1,
                         help='number of training epochs or number of passes on dataset')
     
-    parser.add_argument('--learning_rate', type=float, default=0.01,
+    parser.add_argument('--learning_rate', type=float, default=0.001,
                         help='learning rate gradient for the model')
     
     parser.add_argument('--hd_encoder', type=str, default='nonlinear',
@@ -39,7 +39,7 @@ def parse_option():
     parser.add_argument('--dimension_hd', type=int, default=1000,
                         help='number of dimensions in the hypervector')
     
-    parser.add_argument('--dataset', type=str, default='SanFranciscoTraffic', 
+    parser.add_argument('--dataset', type=str, default='MetroInterstateTrafficVolume', 
                         choices=['SanFranciscoTraffic', 'MetroInterstateTrafficVolume', 
                                  'GuangzhouTraffic', 'EnergyConsumptionFraunhofer', 'ElectricityLoadDiagrams'],
                         help='Dataset to initialize')
@@ -144,7 +144,8 @@ def main():
         error = model.test(sets_testing, matrix_1_norm, matrix_1_norm_org, y, cv=False)
 
     if opt.model == "KalmanHD":
-        from models.ARHD.RegHD_AR_M import Return_Model
+        #from models.ARHD.RegHD_AR_M import Return_Model
+        from models.ARHD.RegHD_acc import Return_Model
         model = Return_Model(opt.size_of_sample, opt.dimension_hd, opt.models, matrix_1_norm.shape[0], opt)
         y = np.zeros((matrix_1_norm.shape))
         model.train(sets_training, matrix_1_norm, matrix_1_norm_org, y, opt.epochs, sets_cv)
@@ -163,7 +164,7 @@ def main():
        vae, enc, dec, es = Train_Model(vae, es, matrix_1_norm, sets_training, opt.retraining, opt.dataset, opt.size_of_sample + 1, opt.epochs, opt.flipping_rate)
        error = Test_Model(vae, matrix_1_norm_org, sets_testing, opt.size_of_sample + 1, opt.flipping_rate)  
 
-    add_value_to_csv(csv_file, opt.dataset, opt.model, opt.models, opt.novelty, opt.learning_rate, opt.hd_representation, "Gaussian", opt.gaussian_noise, error)
+    add_value_to_csv(csv_file, opt.dataset, opt.model, opt.models, opt.novelty, opt.learning_rate, opt.hd_representation, "None", opt.gaussian_noise, error)
 
     # Save results
 

@@ -49,3 +49,5 @@ SanFranciscoTraffic,KalmanHD,1,0.2,0.001,1,Gaussian,0.0,0.23942136356626792
 SanFranciscoTraffic,KalmanHD,8,0.2,0.001,1,Gaussian,0.0,0.38863712732113825
 SanFranciscoTraffic,KalmanHD,8,0.2,0.01,1,Gaussian,0.0,0.6396005358386709
 SanFranciscoTraffic,KalmanHD,8,0.2,0.01,1,Gaussian,0.0,0.24593637358668974
+SanFranciscoTraffic,KalmanHD,8,0.2,1e-05,1,Gaussian,0.0,0.44099991463187943
+SanFranciscoTraffic,KalmanHD,8,0.2,0.001,1,None,0.0,0.1430833265834709
