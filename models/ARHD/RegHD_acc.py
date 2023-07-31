@@ -72,17 +72,22 @@ class RegHD_AR(nn.Module):
         self.bias.data.uniform_(0, 2 * math.pi) # bias
         self.kwargs = kwargs
         #self.covarianceMatrix = 0.1*torch.eye(self.size) # Only need 1 grid for covariance values in each sensor
-        self.covarianceMatrix = torch.ones(self.d, self.d)
+        self.covarianceMatrix = torch.randn(self.d, self.d) > 0.5
         self.alpha = torch.zeros(d, 1) # Weight hypervector
         self.var = 0 # Variance in original samples
         self.current_ts = None
 
-    def hard_quantize(self, hv):
+    def hard_quantize(self, hv, type="ts"):
         """Function that returns the hapervector to the specified # of bits"""
 
         # Using positives and negatives numbers
-        hv = ((hv)*(2**(self.opt.hd_representation-1)))/self.size
-        hv = torch.tensor(hv // 1 + 2 ** (hv > 0) - 1, dtype = torch.int8)
+        #hv = (hv)/self.size
+        if type=="ts":
+            hv = torch.tensor((hv > 0), dtype = torch.bool)
+        if type=="sum":
+            max = torch.max(hv)
+            min = torch.min(hv)
+            hv = torch.tensor(hv > ((max-min)/2)+min, dtype = torch.bool)
 
         # Using only positives:
         # hv = (hv+self.size)/((self.size)*(2**(1-self.opt.hd_representation)))
@@ -94,7 +99,7 @@ class RegHD_AR(nn.Module):
         enc = self.project(torch.reshape(x, (1, self.size)))
         enc = torch.cos(enc + self.bias) * torch.sin(enc) 
         #enc = self.hard_quantize(multiset(torch.transpose(enc, 0, 1)))
-        enc = hard_quantize(multiset(torch.transpose(enc, 0, 1)))
+        enc = self.hard_quantize(torch.sum(enc, dim=1))
         enc = torch.reshape(enc, (1, self.d))
         return enc
     
@@ -104,6 +109,9 @@ class RegHD_AR(nn.Module):
         enc = self.hard_quantize(torch.cat(tuple(enc)))
         enc = torch.reshape(enc, (1, self.d))
         return enc
+    
+    def bind(self, x, y):
+        return torch.logical_not(torch.logical_xor(x,y))
 
 
     def model_update(self, x, y, **kwargs): # update weights, variance and covariance matrix
@@ -113,18 +121,22 @@ class RegHD_AR(nn.Module):
             self.covarianceMatrix = torch.ones(self.d, self.d) # Unique for each time series"""
 
         model_result, enc = self(x, ts = kwargs['ts']) # Prediction
-        enc =  torch.tensor(enc, dtype = torch.float32)
-        x = torch.reshape(torch.tensor(x, dtype = torch.float32), (1, self.size))
-        const = hard_quantize(multiset(torch.transpose(bind(self.covarianceMatrix,torch.transpose(enc, 0, 1)), 0, 1))) # Repeating value
-        complete = sum(const)
-        self.var = (self.opt.alpha * self.var) + (1-self.opt.alpha) * torch.var(x) # MA for variance
+        #enc =  torch.tensor(enc, dtype = torch.float32)
+        #x = torch.reshape(torch.tensor(x, dtype = torch.float32), (1, self.size))
+        const = torch.sum(self.bind(self.covarianceMatrix, enc), dim=1)
+        #const = hard_quantize(multiset()) # Repeating value
+        complete = torch.where(self.hard_quantize(const, type="sum"), const/self.d, 0)
+        self.var = (self.opt.alpha * self.var) + (1-self.opt.alpha) * np.var(x) # MA for variance
         A_t = float(y - model_result) # Innovation
-        if (float(complete + self.var) >= 0.001 or float(complete + self.var) <= -0.001) and complete != 0: # Make sure its within reasonable values
-            G_t = const / (complete + self.var) # Kalman Gain
+        if (float(self.var) >= 0.001 or float(self.var) <= -0.001): # Make sure its within reasonable values
+            G_t = complete / (self.var) # Kalman Gain
 
             # Update
             self.alpha += torch.reshape(G_t*A_t*self.opt.learning_rate, (self.d, 1))
-            self.covarianceMatrix += hard_quantize(bind(G_t, torch.reshape(const, (self.d, 1))))
+            #const = self.hard_quantize(const, type="sum")
+            check = self.bind(enc, torch.reshape(complete > 0, (self.d, 1)))
+            #const = torch.reshape(const, (1, self.d))
+            self.covarianceMatrix = torch.where(check, self.covarianceMatrix, complete.repeat(self.d, 1) > 0)
     
     def forward(self, x, **kwargs): # With weights x: array of values compute the prediction
         x = torch.tensor(x.reshape((self.size, 1)), dtype = torch.float32)    
