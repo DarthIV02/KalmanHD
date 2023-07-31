@@ -39,7 +39,7 @@ def parse_option():
     parser.add_argument('--dimension_hd', type=int, default=1000,
                         help='number of dimensions in the hypervector')
     
-    parser.add_argument('--dataset', type=str, default='SanFranciscoTraffic', 
+    parser.add_argument('--dataset', type=str, default='MetroInterstateTrafficVolume', 
                         choices=['SanFranciscoTraffic', 'MetroInterstateTrafficVolume', 
                                  'GuangzhouTraffic', 'EnergyConsumptionFraunhofer', 'ElectricityLoadDiagrams'],
                         help='Dataset to initialize')

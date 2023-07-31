@@ -110,32 +110,30 @@ class RegHD_AR(nn.Module):
 
     def model_update(self, x, y, **kwargs): # update weights, variance and covariance matrix
 
-        if(self.current_ts != kwargs['ts']):
+        """if(self.current_ts != kwargs['ts']):
             self.current_ts = kwargs['ts']
-            #self.covarianceMatrix = torch.ones(self.d, self.d) # Unique for each time series"""
+            #self.covarianceMatrix = torch.ones(self.d, self.d) # Unique for each time series
             self.updateCov = True
-            self.past_sim = 0
+            self.past_sim = 0"""
 
         model_result, enc = self(x, ts = kwargs['ts']) # Prediction
-        #enc =  torch.tensor(enc, dtype = torch.float32)
-        #x = torch.reshape(torch.tensor(x, dtype = torch.float32), (1, self.size))
-        const = hard_quantize(torch.sum(torch.mul(self.covarianceMatrix,torch.transpose(enc, 0, 1)), dim = 1)) # Repeating value
-        complete = torch.sum(const)
+
         self.var = (self.opt.alpha * self.var) + (1-self.opt.alpha) * np.var(x) # MA for variance
         A_t = float(y - model_result) # Innovation
-        if (float(complete + self.var) >= 0.001 or float(complete + self.var) <= -0.001) and complete != 0: # Make sure its within reasonable values
-            G_t = const / (complete + self.var) # Kalman Gain
-
+        if (float(self.var) >= 0.001 or float(self.var) <= -0.001):
+            train = False
             # Update
-            self.alpha += G_t*A_t*self.opt.learning_rate
-            if self.updateCov:
-                self.covarianceMatrix2 = self.covarianceMatrix + hard_quantize(torch.mul(G_t, torch.reshape(const, (self.d, 1))))
-                sim = torch.mean(torch.cosine_similarity(self.covarianceMatrix2, self.covarianceMatrix))
-                self.covarianceMatrix = self.covarianceMatrix2
-                if (sim > self.past_sim):
-                    self.past_sim = sim
-                else:
-                    self.updateCov = False
+            if(model_result < 0 or model_result > 1):
+                train = True
+            elif (abs(A_t) > 0.1):
+                train = True
+
+            if train:
+                const = hard_quantize(torch.sum(torch.mul(self.covarianceMatrix,torch.transpose(enc, 0, 1)), dim = 1)) # Repeating value
+                complete = torch.sum(const)
+                G_t = const / (complete + (self.var*self.d)) # Kalman Gain
+                self.alpha += G_t*A_t*self.opt.learning_rate
+                self.covarianceMatrix += hard_quantize(torch.mul(G_t, torch.reshape(const, (self.d, 1))))
     
     def forward(self, x, **kwargs): # With weights x: array of values compute the prediction
         x = torch.tensor(x.reshape((self.size, 1)), dtype = torch.float32)    
@@ -179,7 +177,7 @@ class RegHD_AR(nn.Module):
             for i in (sets_testing): # For each set in the rolling window
                 
                 sample = samples[i:i+self.size] 
-                label = torch.tensor(samples[i+self.size])
+                #label = torch.tensor(samples[i+self.size])
 
                 # Pass samples from test to model (forward function)
                 predictions, enc = self(sample, ts = n)
