@@ -107,6 +107,8 @@ class RegHD_AR(nn.Module):
         enc = torch.reshape(enc, (1, self.d))
         return enc
 
+    def bind(self, x, y):
+        return torch.logical_not(torch.logical_xor(x,y))
 
     def model_update(self, x, y, **kwargs): # update weights, variance and covariance matrix
 
@@ -121,19 +123,22 @@ class RegHD_AR(nn.Module):
         self.var = (self.opt.alpha * self.var) + (1-self.opt.alpha) * np.var(x) # MA for variance
         A_t = float(y - model_result) # Innovation
         if (float(self.var) >= 0.001 or float(self.var) <= -0.001):
-            train = False
+            #train = False
             # Update
-            if(model_result < 0 or model_result > 1):
+            """if(model_result < 0 or model_result > 1):
                 train = True
             elif (abs(A_t) > 0.1):
-                train = True
+                train = True"""
 
-            if train:
+            if (model_result < 0 or model_result > 1) or (abs(A_t) > 0.1):
                 const = hard_quantize(torch.sum(torch.mul(self.covarianceMatrix,torch.transpose(enc, 0, 1)), dim = 1)) # Repeating value
                 complete = torch.sum(const)
                 G_t = const / (complete + (self.var*self.d)) # Kalman Gain
                 self.alpha += G_t*A_t*self.opt.learning_rate
-                self.covarianceMatrix += hard_quantize(torch.mul(G_t, torch.reshape(const, (self.d, 1))))
+                #self.covarianceMatrix += hard_quantize(torch.mul(G_t, torch.reshape(const, (self.d, 1))))
+                #x = torch.mul(G_t, torch.reshape(const, (self.d, 1)))
+                inter = self.bind(G_t > 0, torch.reshape(const > 0, (self.d, 1)))
+                self.covarianceMatrix += torch.where(inter, 1, -1)
     
     def forward(self, x, **kwargs): # With weights x: array of values compute the prediction
         x = torch.tensor(x.reshape((self.size, 1)), dtype = torch.float32)    
@@ -160,7 +165,7 @@ class RegHD_AR(nn.Module):
                     predictions_testing, enc = self(sample, ts = n)
                     y[n, i+self.size] = float(predictions_testing)
 
-                    """if (i % 2000 == 0):
+                    """if (i % 5000 == 0):
                         pred, labels_full = self.test(sets_cv, matrix_1_norm, matrix_1_norm_org, y)
                         print(f"\nCross Validation root mean squared error of {(mean_squared_error(labels_full, pred, squared=False)):.3f}")"""
                 
