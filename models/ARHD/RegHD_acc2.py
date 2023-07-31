@@ -131,7 +131,11 @@ class RegHD_AR(nn.Module):
                 train = True"""
 
             if (model_result < 0 or model_result > 1) or (abs(A_t) > 0.1):
-                const = hard_quantize(torch.sum(torch.mul(self.covarianceMatrix,torch.transpose(enc, 0, 1)), dim = 1)) # Repeating value
+                temp = self.bind(self.covarianceMatrix > 0, torch.transpose(enc, 0, 1) > 0)
+                temp = torch.where(temp, abs(self.covarianceMatrix), -abs(self.covarianceMatrix))
+                const = hard_quantize(torch.sum(temp, dim=1))
+                #const = hard_quantize(torch.sum(torch.mul(self.covarianceMatrix,torch.transpose(enc, 0, 1)), dim = 1)) # Repeating value
+
                 complete = torch.sum(const)
                 G_t = const / (complete + (self.var*self.d)) # Kalman Gain
                 self.alpha += G_t*A_t*self.opt.learning_rate
