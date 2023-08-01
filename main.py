@@ -13,20 +13,20 @@ import torch
 def parse_option():
     parser = argparse.ArgumentParser('argument for training')
 
-    parser.add_argument('--print_freq', type=int, default=100,
+    parser.add_argument('--print_freq', type=int, default=50,
                         help='print frequency')
     
     parser.add_argument('--epochs', type=int, default=1,
                         help='number of training epochs or number of passes on dataset')
     
-    parser.add_argument('--learning_rate', type=float, default=0.01,
+    parser.add_argument('--learning_rate', type=float, default=0.001,
                         help='learning rate gradient for the model')
     
     parser.add_argument('--hd_encoder', type=str, default='nonlinear',
                         choices=['nonlinear', 'time_encoding', 'bind_timeseries', 'linear'],
                         help='the type of hd encoding function to use')
     
-    parser.add_argument('--hd_representation', type=int, default=4,
+    parser.add_argument('--hd_representation', type=int, default=1,
                         help='Number of bits to use for the hypervector representation')
     
     parser.add_argument('--models', type=int, default=1,
@@ -43,7 +43,7 @@ def parse_option():
     parser.add_argument('--trial', type=int, default=0,
                         help='id for recording multiple runs')
     
-    parser.add_argument('--novelty', type=float, default=0.6,
+    parser.add_argument('--novelty', type=float, default=0.2,
                         help='cosine similarity difference for a timeseries to be considered new')
     
     parser.add_argument('--model', type=str, default='DNN', 
@@ -139,7 +139,8 @@ def main():
         error = model.test(sets_testing, matrix_1_norm, matrix_1_norm_org, y, cv=False)
 
     if opt.model == "KalmanHD":
-        from models.ARHD.RegHD_AR_M import Return_Model
+        #from models.ARHD.RegHD_AR_M import Return_Model
+        from models.ARHD.RegHD_acc2 import Return_Model
         model = Return_Model(opt.size_of_sample, opt.dimension_hd, opt.models, matrix_1_norm.shape[0], opt)
         y = np.zeros((matrix_1_norm.shape))
         model.train(sets_training, matrix_1_norm, matrix_1_norm_org, y, opt.epochs, sets_cv)
@@ -183,7 +184,7 @@ def main():
         plt.savefig(f'results2/EnergyConsumptionFraunhofer/AR_Debug/time_series_{i}.png')
         plt.clf()""" 
 
-def add_value_to_csv(csv_file, ts, model, noise, noiseVol, lr, hd_bites, mae):
+def add_value_to_csv(csv_file, ts, model, models, novelty, lr, hd_bites, noise, noiseVol, mae):
     # Check if the CSV file exists
     try:
         with open(csv_file, 'r') as file:
@@ -192,10 +193,10 @@ def add_value_to_csv(csv_file, ts, model, noise, noiseVol, lr, hd_bites, mae):
             data = list(reader)
     except FileNotFoundError:
         # If the file doesn't exist, create a new one with the header
-        data = [['TimeSeries Dataset', 'Model', 'Noise', 'Noise_Vol', 'Lr', 'hd_bites', 'MAE']]
+        data = [['TimeSeries Dataset', 'Model', 'Models', 'Novelty', 'Lr', 'hd_bites','Noise', 'Level Noise', 'MAE']]
     
     # Add the value to the data
-    data.append([ts, model, noise, noiseVol, lr, hd_bites, mae])
+    data.append([ts, model, models, novelty, lr, hd_bites, noise, noiseVol, mae])
     
     # Write the updated data back to the CSV file
     with open(csv_file, 'w', newline='') as file:

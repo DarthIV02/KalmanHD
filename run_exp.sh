@@ -1,5 +1,6 @@
-for dataset in SanFranciscoTraffic MetroInterstateTrafficVolume GuangzhouTraffic EnergyConsumptionFraunhofer ElectricityLoadDiagrams
+for dataset in MetroInterstateTrafficVolume GuangzhouTraffic EnergyConsumptionFraunhofer ElectricityLoadDiagrams # SanFranciscoTraffic
 do
+    python3 main.py --model KalmanHD --dataset "$dataset";
 
     # python3 main.py --model KalmanFilter --dataset "$dataset";
     
@@ -46,7 +47,7 @@ do
     
     #python3 main.py --learning_rate "$learning_rate" --dimension_hd "$dimension_hd" --model RegHD --dataset "$dataset" --hd_representation "$hd_representation";
 
-    #python3 main.py --model DNN --dataset "$dataset";
+    # python3 main.py --model DNN --dataset "$dataset";
 
     #python3 main.py --model VAE --dataset "$dataset";
 

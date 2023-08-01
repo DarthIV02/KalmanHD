@@ -66,7 +66,14 @@ MetroInterstateTrafficVolume,KalmanHD,32,0.7,0.1,2,0.48428126502055263
 GuangzhouTraffic,KalmanHD,32,0.7,0.01,4,0.1012511118548652
 EnergyConsumptionFraunhofer,KalmanHD,32,0.7,0.01,4,0.2363368019245116
 ElectricityLoadDiagrams,KalmanHD,32,0.7,0.01,1,0.31481476666640423
-SanFranciscoTraffic,KalmanHD,8,0.65,0.01,4,0.14292571030335327
+ElectricityLoadDiagrams,KalmanHD,2,0.05,0.01,1,0.08827341775223332
+SanFranciscoTraffic,KalmanHD,1,0.0015,0.01,4,0.14110341359344758
+SanFranciscoTraffic,KalmanHD,2,0.5,0.01,4,0.1429824378629783
+SanFranciscoTraffic,KalmanHD,2,0.6,0.01,4,0.1383844156953175
+SanFranciscoTraffic,KalmanHD,4,0.6,0.01,4,0.1409184307905268
+SanFranciscoTraffic,KalmanHD,4,0.6,0.01,4,0.1409184307905268
+SanFranciscoTraffic,KalmanHD,4,0.5,0.01,4,0.14141256085169618
+SanFranciscoTraffic,KalmanHD,4,0.4,0.01,4,0.14162524956605443SanFranciscoTraffic,KalmanHD,8,0.65,0.01,4,0.14292571030335327
 SanFranciscoTraffic,KalmanHD,8,0.75,0.01,4,0.13966932984733346
 SanFranciscoTraffic,KalmanHD,32,0.75,0.01,4,0.3355210374422608
 SanFranciscoTraffic,KalmanHD,32,0.8,0.01,4,0.3320576400259601

@@ -364,7 +364,6 @@ GuangzhouTraffic,KalmanFilter,Flipping,0.01,0.01,1,0.1082922806285127
 GuangzhouTraffic,KalmanHD,Flipping,0.01,0.01,4,0.12420944673151506
 EnergyConsumptionFraunhofer,KalmanFilter,Flipping,0.01,0.01,1,0.11708202034109907
 EnergyConsumptionFraunhofer,KalmanHD,Flipping,0.01,0.01,4,0.12525340377075234
-ElectricityLoadDiagrams,RegHD,Flipping,0.01,1e-05,1,0.0877897659513731
 ElectricityLoadDiagrams,KalmanFilter,Flipping,0.01,0.01,1,0.06509924330570822
 ElectricityLoadDiagrams,KalmanHD,Flipping,0.01,0.01,1,0.07579399243617549
 SanFranciscoTraffic,KalmanFilter,Flipping,0.02,0.01,1,0.16141821983966403
