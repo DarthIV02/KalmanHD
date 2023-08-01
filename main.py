@@ -160,7 +160,7 @@ def main():
 
     # Write results
     
-    add_value_to_csv(csv_file, opt.dataset, opt.model, "Missing", opt.p, opt.learning_rate, opt.hd_representation, error)
+    add_value_to_csv(csv_file, opt.dataset, opt.model, opt.models, opt.novelty, opt.learning_rate, opt.hd_representation, "None", opt.p, error)
 
     # Visualize results
 
