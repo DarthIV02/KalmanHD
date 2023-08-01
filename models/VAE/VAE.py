@@ -251,6 +251,7 @@ def Train_Model(vae, es, matrix, sets_training, retraining, dataset, sequence_le
         es = EarlyStopping(patience=10, verbose=1, min_delta=0.001,
                            monitor='loss', mode='auto', restore_best_weights=True)
         vae, enc, dec = get_model(sequence_length)
+        sequence_input_train[np.isnan(sequence_input_train)] = 0
         print([sequence_input_train[:, :, 0]] + [sequence_target_drop_train, sequence_target_train])
         vae.fit([sequence_input_train[:, :, 0]] + [sequence_target_drop_train, sequence_target_train],
                 epochs=epochs, shuffle=False, callbacks=[es])
