@@ -96,7 +96,7 @@ class RegHD_AR(nn.Module):
         enc = self.project(torch.reshape(x, (1, self.size)))
         enc = torch.cos(enc + self.bias) * torch.sin(enc) 
         #enc = self.hard_quantize(multiset(torch.transpose(enc, 0, 1)))
-        enc = hard_quantize(torch.sum(enc, dim = 1))
+        enc = torch.where(torch.sum(enc, dim = 1)>0, 1, -1)
         enc = torch.reshape(enc, (1, self.d))
         return enc
     
@@ -121,7 +121,7 @@ class RegHD_AR(nn.Module):
         model_result, enc = self(x, ts = kwargs['ts']) # Prediction
 
         self.var = (self.opt.alpha * self.var) + (1-self.opt.alpha) * np.var(x) # MA for variance
-        A_t = float(y - model_result) # Innovation
+        
         if (float(self.var) >= 0.001 or float(self.var) <= -0.001):
             #train = False
             # Update
@@ -129,18 +129,23 @@ class RegHD_AR(nn.Module):
                 train = True
             elif (abs(A_t) > 0.1):
                 train = True"""
+            
+            A_t = float(y - model_result) # Innovation
 
             if (model_result < 0 or model_result > 1) or (abs(A_t) > 0.1):
-                temp = self.bind(self.covarianceMatrix > 0, enc > 0)
-                temp = torch.where(temp, abs(self.covarianceMatrix), -abs(self.covarianceMatrix))
-                const = hard_quantize(torch.sum(temp, dim=0))
-                #const = hard_quantize(torch.sum(torch.mul(self.covarianceMatrix,torch.transpose(enc, 0, 1)), dim = 1)) # Repeating value
+                #temp = self.bind(self.covarianceMatrix > 0, enc > 0)
+                #temp = torch.where(temp, abs(self.covarianceMatrix), -abs(self.covarianceMatrix))
+                #const = hard_quantize(torch.sum(temp, dim=0))
+
+                const = torch.where((torch.sum(torch.mul(self.covarianceMatrix,torch.transpose(enc, 0, 1)), dim = 1))>0, 1, -1) # Repeating value
+                
+                #inter = torch.where(self.bind(self.covarianceMatrix > 0, enc > 0), 1, -1)
+                #const = torch.where(torch.sum(inter, dim=0) > 0, 1, -1)
 
                 complete = torch.sum(const)
                 G_t = const / (complete + (self.var*self.d)) # Kalman Gain
                 self.alpha += G_t*A_t*self.opt.learning_rate
-                #self.covarianceMatrix += hard_quantize(torch.mul(G_t, torch.reshape(const, (self.d, 1))))
-                #x = torch.mul(G_t, torch.reshape(const, (self.d, 1)))
+                
                 inter = self.bind(G_t > 0, torch.reshape(const > 0, (self.d, 1)))
                 self.covarianceMatrix += torch.where(inter, 1, -1)
     
