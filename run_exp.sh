@@ -3,7 +3,7 @@ do
     #python3 main.py --model KalmanHD --dataset "$dataset";
     #(( time python3 main.py --model KalmanFilter --dataset "$dataset" ) 2>&1 ) | tee KalmanFilter_"$dataset";
 
-    d = 500
+    d=500
     if [ "$dataset" = "SanFranciscoTraffic" ]; then
         learning_rate=0.001
     elif [ "$dataset" = "MetroInterstateTrafficVolume" ]; then
