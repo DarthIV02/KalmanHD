@@ -129,10 +129,10 @@ class RegHD_AR(nn.Module):
                 complete = torch.sum(const)
                 G_t = const / (complete + (self.var*self.d)) # Kalman Gain
                 self.alpha += G_t*A_t*self.opt.learning_rate
-                self.covarianceMatrix += hard_quantize(torch.mul(G_t, torch.reshape(const, (self.d, 1))))
+                #self.covarianceMatrix += hard_quantize(torch.mul(G_t, torch.reshape(const, (self.d, 1))))
                 #x = torch.mul(G_t, torch.reshape(const, (self.d, 1)))
-                #inter = self.bind(G_t > 0, torch.reshape(const > 0, (self.d, 1)))
-                #self.covarianceMatrix += torch.where(inter, 1, -1)
+                inter = self.bind(G_t > 0, torch.reshape(const > 0, (self.d, 1)))
+                self.covarianceMatrix += torch.where(inter, 1, -1)
     
     def forward(self, x, **kwargs): # With weights x: array of values compute the prediction
         #x = torch.tensor(x.reshape((self.size, 1)), dtype = torch.float32)    
