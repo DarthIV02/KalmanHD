@@ -230,7 +230,8 @@ def Train_Model(vae, es, matrix, sets_training, retraining, dataset, sequence_le
         sequence_input_train[sequence_input_train == 1] = 1 - 0.000001
         print([sequence_input_train[:, :, 0]] + [sequence_target_drop_train, sequence_target_train])
         vae.fit([sequence_input_train[:, :, 0]] + [sequence_target_drop_train, sequence_target_train],
-                epochs=epochs, shuffle=False, callbacks=[es])
+                epochs=epochs, shuffle=False)
+        # , callbacks=[es]
 
         vae.save_weights(f"trained_models/vae-{dataset}_{sequence_length-1}_{epochs}_{noise}_{level}.h5")
 
