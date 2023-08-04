@@ -230,7 +230,7 @@ def Train_Model(vae, es, matrix, sets_training, retraining, dataset, sequence_le
         vae, enc, dec = get_model(sequence_length)
         sequence_input_train[np.isnan(sequence_input_train)] = 0
         sequence_input_train[sequence_input_train == 1] = 1 - 0.000001
-        print([sequence_input_train[:, :, 0]] + [sequence_target_drop_train, sequence_target_train])
+        #print([sequence_input_train[:, :, 0]] + [sequence_target_drop_train, sequence_target_train])
         vae.fit([sequence_input_train[:, :, 0]] + [sequence_target_drop_train, sequence_target_train],
                 epochs=epochs, shuffle=False, batch_size=1)
         # , callbacks=[es]
