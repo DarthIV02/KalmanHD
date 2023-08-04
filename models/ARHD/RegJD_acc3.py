@@ -151,9 +151,9 @@ class RegHD_AR(nn.Module):
                     predictions_testing, enc = self(sample, ts = n)
                     y[n, i+self.size] = float(predictions_testing)
 
-                    if (i % 2000 == 0):
-                        pred, labels_full = self.test(sets_cv, matrix_1_norm, matrix_1_norm_org, y)
-                        print(f"\nCross Validation root mean squared error of {(mean_squared_error(labels_full, pred, squared=False)):.3f}")
+                    #if (i % 2000 == 0):
+                    #    pred, labels_full = self.test(sets_cv, matrix_1_norm, matrix_1_norm_org, y)
+                    #    print(f"\nCross Validation root mean squared error of {(mean_squared_error(labels_full, pred, squared=False)):.3f}")
                 
                 if (n % self.opt.print_freq == 0):
                     pred, labels_full = self.test(sets_cv, matrix_1_norm, matrix_1_norm_org, y)
