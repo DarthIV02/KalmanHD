@@ -30,11 +30,13 @@ def set_seed(seed):
 def sampling(args):
 
     z_mean, z_log_sigma = args
-    batch_size = tf.shape(z_mean)[0]
+    #batch_size = tf.shape(z_mean)[0]
+    batch_size = 1
     epsilon = K.random_normal(
         shape=(batch_size, latent_dim), mean=0., stddev=1.)
 
     return z_mean + K.exp(0.5 * z_log_sigma) * epsilon
+    #return 1
 
 
 def vae_loss(inp, original, out, z_log_sigma, z_mean, sequence_length):
@@ -230,7 +232,7 @@ def Train_Model(vae, es, matrix, sets_training, retraining, dataset, sequence_le
         sequence_input_train[sequence_input_train == 1] = 1 - 0.000001
         print([sequence_input_train[:, :, 0]] + [sequence_target_drop_train, sequence_target_train])
         vae.fit([sequence_input_train[:, :, 0]] + [sequence_target_drop_train, sequence_target_train],
-                epochs=epochs, shuffle=False)
+                epochs=epochs, shuffle=False, batch_size=1)
         # , callbacks=[es]
 
         vae.save_weights(f"trained_models/vae-{dataset}_{sequence_length-1}_{epochs}_{noise}_{level}.h5")
