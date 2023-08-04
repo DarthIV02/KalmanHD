@@ -296,6 +296,9 @@ def Test_Model(vae, matrix, sets_testing, sequence_length):
 
     vae = Model(vae.input[:-1], vae.output)
 
+    sequence_input_test[np.isnan(sequence_input_test)] = 0
+    sequence_input_test[sequence_input_test == 1] = 1 - 0.000001
+
     reconstruc_test = scaler_target.inverse_transform(
         vae.predict([sequence_input_test[:, :, 0]] + [sequence_target_drop_test]))
 
