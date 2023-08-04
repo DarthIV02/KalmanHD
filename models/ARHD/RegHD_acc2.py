@@ -73,7 +73,7 @@ class RegHD_AR(nn.Module):
         self.kwargs = kwargs
         #self.covarianceMatrix = 0.1*torch.eye(self.size) # Only need 1 grid for covariance values in each sensor
         self.covarianceMatrix = torch.ones(self.d, self.d)
-        self.alpha = torch.zeros(1, d) # Weight hypervector
+        self.alpha = torch.zeros(1, d).type(torch.FloatTensor) # Weight hypervector
         self.var = 0 # Variance in original samples
         self.current_ts = None
         self.updateCov = True
@@ -93,17 +93,10 @@ class RegHD_AR(nn.Module):
         return hv
     
     def encode(self, x, **kwargs): # encoding a single value TENSOR of size "size"
-        enc = self.project(torch.reshape(x, (1, self.size)))
+        enc = self.project(torch.reshape(torch.tensor(x), (1, self.size)))
         enc = torch.cos(enc + self.bias) * torch.sin(enc) 
         #enc = self.hard_quantize(multiset(torch.transpose(enc, 0, 1)))
-        enc = torch.where(torch.sum(enc, dim = 1)>0, 1, -1)
-        enc = torch.reshape(enc, (1, self.d))
-        return enc
-    
-    def encode2(self, x, **kwargs): # encoding a single value TENSOR of size "size"
-        enc = self.project(torch.reshape(x, (1, self.size)))
-        #enc = torch.cos(enc + self.bias) * torch.sin(enc) 
-        enc = self.hard_quantize(torch.cat(tuple(enc)))
+        enc = hard_quantize(torch.sum(enc, dim = 1))
         enc = torch.reshape(enc, (1, self.d))
         return enc
 
@@ -121,38 +114,30 @@ class RegHD_AR(nn.Module):
         model_result, enc = self(x, ts = kwargs['ts']) # Prediction
 
         self.var = (self.opt.alpha * self.var) + (1-self.opt.alpha) * np.var(x) # MA for variance
-        
+
         if (float(self.var) >= 0.001 or float(self.var) <= -0.001):
-            #train = False
-            # Update
-            """if(model_result < 0 or model_result > 1):
-                train = True
-            elif (abs(A_t) > 0.1):
-                train = True"""
             
+            # Update
             A_t = float(y - model_result) # Innovation
 
             if (model_result < 0 or model_result > 1) or (abs(A_t) > 0.1):
                 #temp = self.bind(self.covarianceMatrix > 0, enc > 0)
                 #temp = torch.where(temp, abs(self.covarianceMatrix), -abs(self.covarianceMatrix))
                 #const = hard_quantize(torch.sum(temp, dim=0))
-
-                const = torch.where((torch.sum(torch.mul(self.covarianceMatrix,torch.transpose(enc, 0, 1)), dim = 1))>0, 1, -1) # Repeating value
-                
-                #inter = torch.where(self.bind(self.covarianceMatrix > 0, enc > 0), 1, -1)
-                #const = torch.where(torch.sum(inter, dim=0) > 0, 1, -1)
+                const = hard_quantize(torch.sum(torch.mul(self.covarianceMatrix,torch.transpose(enc, 0, 1)), dim = 1)) # Repeating value
 
                 complete = torch.sum(const)
                 G_t = const / (complete + (self.var*self.d)) # Kalman Gain
                 self.alpha += G_t*A_t*self.opt.learning_rate
-                
-                inter = self.bind(G_t > 0, torch.reshape(const > 0, (self.d, 1)))
-                self.covarianceMatrix += torch.where(inter, 1, -1)
+                self.covarianceMatrix += hard_quantize(torch.mul(G_t, torch.reshape(const, (self.d, 1))))
+                #x = torch.mul(G_t, torch.reshape(const, (self.d, 1)))
+                #inter = self.bind(G_t > 0, torch.reshape(const > 0, (self.d, 1)))
+                #self.covarianceMatrix += torch.where(inter, 1, -1)
     
     def forward(self, x, **kwargs): # With weights x: array of values compute the prediction
-        x = torch.tensor(x.reshape((self.size, 1)), dtype = torch.float32)    
-        enc = self.encode(x, ts = kwargs['ts'])      
-        model_result = F.linear(enc.type(torch.FloatTensor), self.alpha.type(torch.FloatTensor))
+        #x = torch.tensor(x.reshape((self.size, 1)), dtype = torch.float32)    
+        enc = self.encode(x, ts = kwargs['ts'])     
+        model_result = F.linear(enc.float(), self.alpha)
         # prediction
         
         return model_result, enc
