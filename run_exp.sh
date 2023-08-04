@@ -1,7 +1,7 @@
 for dataset in GuangzhouTraffic EnergyConsumptionFraunhofer ElectricityLoadDiagrams SanFranciscoTraffic # MetroInterstateTrafficVolume 
 do
     #python3 main.py --model KalmanHD --dataset "$dataset";
-    (( time python3 main.py --model KalmanFilter --dataset "$dataset" ) 2>&1 ) | tee KalmanFilter_"$dataset";
+    #(( time python3 main.py --model KalmanFilter --dataset "$dataset" ) 2>&1 ) | tee KalmanFilter_"$dataset";
 
 
     if [ "$dataset" = "SanFranciscoTraffic" ]; then
@@ -16,7 +16,7 @@ do
         learning_rate=0.0001
     fi
 
-    (( time python3 main.py --model KalmanHD --dataset "$dataset" --learning_rate "$learning_rate" --hd_representation "$hd_representation" ) 2>&1 ) | tee KalmanHD_"$dataset";
+    (( time python3 main.py --model KalmanHD --dataset "$dataset" --learning_rate "$learning_rate" ) 2>&1 ) | tee KalmanHD_"$dataset";
 
     if [ "$dataset" = "SanFranciscoTraffic" ]; then
         learning_rate=0.000001
