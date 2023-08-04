@@ -1,4 +1,4 @@
-for dataset in MetroInterstateTrafficVolume GuangzhouTraffic EnergyConsumptionFraunhofer ElectricityLoadDiagrams SanFranciscoTraffic
+for dataset in GuangzhouTraffic EnergyConsumptionFraunhofer ElectricityLoadDiagrams SanFranciscoTraffic # MetroInterstateTrafficVolume 
 do
     #python3 main.py --model KalmanHD --dataset "$dataset";
     (( time python3 main.py --model KalmanFilter --dataset "$dataset" ) 2>&1 ) | tee KalmanFilter_"$dataset";
@@ -40,10 +40,10 @@ do
         dimension_hd=5000
     fi
 
-    (( time python3 main.py --learning_rate "$learning_rate" --dimension_hd "$dimension_hd" --model RegHD --dataset "$dataset" --hd_representation "$hd_representation" ) 2>&1 ) | tee RegHD_"$dataset";
+    #(( time python3 main.py --learning_rate "$learning_rate" --dimension_hd "$dimension_hd" --model RegHD --dataset "$dataset" --hd_representation "$hd_representation" ) 2>&1 ) | tee RegHD_"$dataset";
 
-    (( time python3 main.py --model DNN --dataset "$dataset" ) 2>&1 ) | tee DNN_"$dataset";
+    #(( time python3 main.py --model DNN --dataset "$dataset" ) 2>&1 ) | tee DNN_"$dataset";
 
-    (( time python3 main.py --model VAE --dataset "$dataset" ) 2>&1 ) | tee VAE_"$dataset";
+    #(( time python3 main.py --model VAE --dataset "$dataset" ) 2>&1 ) | tee VAE_"$dataset";
 done
 
