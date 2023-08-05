@@ -46,7 +46,7 @@ def parse_option():
     parser.add_argument('--novelty', type=float, default=0.2,
                         help='cosine similarity difference for a timeseries to be considered new')
     
-    parser.add_argument('--model', type=str, default='KalmanHD', 
+    parser.add_argument('--model', type=str, default='VAE', 
                         choices=['RegHD', 'VAE', 'DNN', 'KalmanFilter', 'KalmanHD'],
                         help='Model to test')
     
