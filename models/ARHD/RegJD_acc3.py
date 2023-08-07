@@ -73,9 +73,11 @@ class RegHD_AR(nn.Module):
         self.kwargs = kwargs
         #self.covarianceMatrix = 0.1*torch.eye(self.size) # Only need 1 grid for covariance values in each sensor
         self.covarianceMatrix = torch.ones(self.d, self.d)
-        self.alpha = torch.zeros(d, 1) # Weight hypervector
+        self.alpha = torch.zeros(1, d).type(torch.FloatTensor) # Weight hypervector
         self.var = 0 # Variance in original samples
         self.current_ts = None
+        self.updateCov = True
+        self.past_sim = 0
 
     def hard_quantize(self, hv):
         """Function that returns the hapervector to the specified # of bits"""
@@ -91,45 +93,51 @@ class RegHD_AR(nn.Module):
         return hv
     
     def encode(self, x, **kwargs): # encoding a single value TENSOR of size "size"
-        enc = self.project(torch.reshape(x, (1, self.size)))
+        enc = self.project(torch.reshape(torch.tensor(x), (1, self.size)))
         enc = torch.cos(enc + self.bias) * torch.sin(enc) 
         #enc = self.hard_quantize(multiset(torch.transpose(enc, 0, 1)))
-        enc = hard_quantize(multiset(torch.transpose(enc, 0, 1)))
-        enc = torch.reshape(enc, (1, self.d))
-        return enc
-    
-    def encode2(self, x, **kwargs): # encoding a single value TENSOR of size "size"
-        enc = self.project(torch.reshape(x, (1, self.size)))
-        #enc = torch.cos(enc + self.bias) * torch.sin(enc) 
-        enc = self.hard_quantize(torch.cat(tuple(enc)))
+        enc = hard_quantize(multiset(enc))
         enc = torch.reshape(enc, (1, self.d))
         return enc
 
+    def bind(self, x, y):
+        return torch.logical_not(torch.logical_xor(x,y))
 
     def model_update(self, x, y, **kwargs): # update weights, variance and covariance matrix
 
         """if(self.current_ts != kwargs['ts']):
             self.current_ts = kwargs['ts']
-            self.covarianceMatrix = torch.ones(self.d, self.d) # Unique for each time series"""
+            #self.covarianceMatrix = torch.ones(self.d, self.d) # Unique for each time series
+            self.updateCov = True
+            self.past_sim = 0"""
 
         model_result, enc = self(x, ts = kwargs['ts']) # Prediction
-        enc =  torch.tensor(enc, dtype = torch.float32)
-        x = torch.reshape(torch.tensor(x, dtype = torch.float32), (1, self.size))
-        const = hard_quantize(multiset(torch.transpose(bind(self.covarianceMatrix,torch.transpose(enc, 0, 1)), 0, 1))) # Repeating value
-        complete = sum(const)
-        self.var = (self.opt.alpha * self.var) + (1-self.opt.alpha) * torch.var(x) # MA for variance
-        A_t = float(y - model_result) # Innovation
-        if (float(complete + self.var) >= 0.001 or float(complete + self.var) <= -0.001) and complete != 0: # Make sure its within reasonable values
-            G_t = const / (complete + self.var) # Kalman Gain
 
+        self.var = (self.opt.alpha * self.var) + (1-self.opt.alpha) * np.var(x) # MA for variance
+
+        if (float(self.var) >= 0.001 or float(self.var) <= -0.001):
+            
             # Update
-            self.alpha += torch.reshape(G_t*A_t*self.opt.learning_rate, (self.d, 1))
-            self.covarianceMatrix += hard_quantize(bind(G_t, torch.reshape(const, (self.d, 1))))
+            A_t = float(y - model_result) # Innovation
+
+            if (model_result < 0 or model_result > 1) or (abs(A_t) > 0.1):
+                #temp = self.bind(self.covarianceMatrix > 0, enc > 0)
+                #temp = torch.where(temp, abs(self.covarianceMatrix), -abs(self.covarianceMatrix))
+                #const = hard_quantize(torch.sum(temp, dim=0))
+                const = hard_quantize(torch.sum(torch.mul(self.covarianceMatrix,torch.transpose(enc, 0, 1)), dim = 1)) # Repeating value
+
+                complete = torch.sum(const)
+                G_t = const / (complete + (self.var*self.d)) # Kalman Gain
+                self.alpha += G_t*A_t*self.opt.learning_rate
+                #self.covarianceMatrix += hard_quantize(torch.mul(G_t, torch.reshape(const, (self.d, 1))))
+                #x = torch.mul(G_t, torch.reshape(const, (self.d, 1)))
+                inter = bind(G_t, torch.reshape(const, (self.d, 1)))
+                self.covarianceMatrix += hard_quantize(inter, 1, -1)
     
     def forward(self, x, **kwargs): # With weights x: array of values compute the prediction
-        x = torch.tensor(x.reshape((self.size, 1)), dtype = torch.float32)    
-        enc = self.encode(x, ts = kwargs['ts'])      
-        model_result = F.linear(enc.type(torch.FloatTensor), torch.transpose(self.alpha.type(torch.FloatTensor), 0, 1))
+        #x = torch.tensor(x.reshape((self.size, 1)), dtype = torch.float32)    
+        enc = self.encode(x, ts = kwargs['ts'])     
+        model_result = F.linear(enc.float(), self.alpha)
         # prediction
         
         return model_result, enc
@@ -151,9 +159,9 @@ class RegHD_AR(nn.Module):
                     predictions_testing, enc = self(sample, ts = n)
                     y[n, i+self.size] = float(predictions_testing)
 
-                    #if (i % 2000 == 0):
-                    #    pred, labels_full = self.test(sets_cv, matrix_1_norm, matrix_1_norm_org, y)
-                    #    print(f"\nCross Validation root mean squared error of {(mean_squared_error(labels_full, pred, squared=False)):.3f}")
+                    """if (i % 5000 == 0):
+                        pred, labels_full = self.test(sets_cv, matrix_1_norm, matrix_1_norm_org, y)
+                        print(f"\nCross Validation root mean squared error of {(mean_squared_error(labels_full, pred, squared=False)):.3f}")"""
                 
                 if (n % self.opt.print_freq == 0):
                     pred, labels_full = self.test(sets_cv, matrix_1_norm, matrix_1_norm_org, y)
@@ -168,7 +176,7 @@ class RegHD_AR(nn.Module):
             for i in (sets_testing): # For each set in the rolling window
                 
                 sample = samples[i:i+self.size] 
-                label = torch.tensor(samples[i+self.size])
+                #label = torch.tensor(samples[i+self.size])
 
                 # Pass samples from test to model (forward function)
                 predictions, enc = self(sample, ts = n)
