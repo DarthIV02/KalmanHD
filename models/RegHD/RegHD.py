@@ -36,14 +36,15 @@ class RegHD(nn.Module):
 
         self.size = size
         self.d = d
-        self.lr = kwargs['opt'].learning_rate # alpha
+        self.dev = torch.device(kwargs['dev'])
+        self.lr = torch.tensor([kwargs['opt'].learning_rate]).to(self.dev) # alpha
         #self.M = torch.zeros(models, d).float() # Model initializes in 0
-        self.M = torch.zeros(d).float()
+        self.M = torch.zeros(1, d).float().to(self.dev)
         self.opt = kwargs['opt']
-        self.project = embeddings.Projection(self.size, d, dtype=torch.float32) # 5 features, 10000 dimensions = hypervectors like weights?
+        self.project = embeddings.Projection(self.size, d, dtype=torch.float32, device=self.dev) # 5 features, 10000 dimensions = hypervectors like weights?
         #self.project = embeddings.Projection(1, d).float()
         self.project.weight.data.normal_(0, 1) # Normal distributions mean=0.0, std=1.0
-        self.bias = nn.parameter.Parameter(torch.empty(d), requires_grad=False)
+        self.bias = nn.parameter.Parameter(torch.empty(d), requires_grad=False).to(self.dev)
         self.bias.data.uniform_(0, 2 * math.pi) # bias
         #self.cluster = functional.random_hv(models, d) 
         self.kwargs = kwargs
@@ -71,15 +72,21 @@ class RegHD(nn.Module):
         enc = torch.cos(enc + self.bias) * torch.sin(enc) 
         #return functional.hard_quantize(enc)
         #return self.hard_quantize(enc) <-- Original
-        enc = self.hard_quantize(enc)
+        enc = hard_quantize(enc)
         #if self.opt.flipping_rate > 0:
         #    enc = self.flip_bits(enc[0])
         return enc
     
     def model_update(self, x, y, **kwargs): # update # y = no hv
-        model_result, enc = self(x, ts = kwargs['ts'])
-        update = self.M + (float(self.lr) * float(y - model_result) * enc) # Model + alpha*(Error)*(x)
-        self.M = update # New 
+        model_result, enc = self(x)
+        #print(self.M.device)
+        #print(self.lr.device)
+        #print(y.device)
+        #print(model_result.device)
+        #print(enc.device)
+        self.M += (self.lr * (y - model_result) * enc)
+        #update = self.M + (float(self.lr) * float(y - model_result) * enc) # Model + alpha*(Error)*(x)
+        #self.M = update # New 
         # update cluster center?
         #confidence = np.transpose(softmax(cos_similarity(self.cluster, enc)))
         #center = [num.item() for num in confidence[0]].index(max(confidence[0]).item())
@@ -88,44 +95,56 @@ class RegHD(nn.Module):
     
     def forward(self, x, **kwargs): # With weights x: array of values
         #x = torch.tensor(x * self.alpha[kwargs['ts']])
-        x = torch.tensor(x.reshape((self.size, 1)), dtype = torch.float32)
-        enc = self.encode(x, ts = kwargs['ts'])
+        #x = torch.tensor(x.reshape((self.size, 1)), dtype = torch.float32, device=self.dev)
+        enc = self.encode(x)
         enc = torch.reshape(enc, (1, self.d))
 
-        model_result = F.linear(enc.type(torch.FloatTensor), self.M.type(torch.FloatTensor))
+        model_result = torch.sum(torch.mul(enc, self.M))
+
+        #model_result = F.linear(enc.type(torch.FloatTensor), self.M.type(torch.FloatTensor))
         #res = F.linear(confidence, model_result) # Multiply enc (x) * weights (Model) = Dot product
         #return res[0].clone().detach(), enc, hvs # Return the resolutions
         return model_result, enc
 
     def train(self, sets_training, matrix_1_norm, matrix_1_norm_org, y, epochs, sets_cv):
 
+        size = matrix_1_norm.shape[0]
+        matrix_1_norm = torch.tensor(matrix_1_norm, dtype = torch.float32, device=self.dev)
+        y = torch.tensor(y, dtype = torch.float32, device=self.dev)
+
         for _ in range(epochs): # Number of iterations for all the samples
             
-            for n in tqdm(range(matrix_1_norm.shape[0])):
+            for n in tqdm(range(size)):
                 samples = matrix_1_norm[n, :]
+                #samples = torch.tensor(matrix_1_norm[n, :], dtype = torch.float32, device=self.dev)
             
                 for i in (sets_training):
                     
                     sample = samples[i:i+self.size]
-                    label = torch.tensor(samples[i+self.size])
+                    #sample = torch.tensor(sample.reshape((self.size, 1)), dtype = torch.float32, device=self.dev)
+                    #label = torch.tensor(samples[i+self.size]).to(self.dev)
+                    label = samples[i+self.size]
                     self.model_update(sample, label, ts = n) # Pass input and label to train
                     predictions_testing, enc = self(sample, ts = n)
                     #pred.append(float(predictions_testing))
-                    y[n, i+self.size] = float(predictions_testing)
+                    y[n, i+self.size] = predictions_testing
                     #labels_full.append(float(label.unsqueeze(dim=0)))
                 
-                if (n % self.opt.print_freq == 0):
-                    pred, labels_full = self.test(sets_cv, matrix_1_norm, matrix_1_norm_org, y)
+                if (n % self.opt.print_freq == 0 and n != 0):
+                    pred, labels_full = self.test(sets_cv, matrix_1_norm, matrix_1_norm_org, y.cpu())
                     print(f"Cross Validation root mean squared error of {(mean_squared_error(labels_full, pred, squared=False)):.3f}")
     
     def test(self, sets_testing, matrix_1_norm, matrix_1_norm_org, y, cv = True):
+        matrix_1_norm_org = torch.tensor(matrix_1_norm_org, dtype = torch.float32, device=self.dev)
+        matrix_1_norm = torch.tensor(matrix_1_norm, dtype = torch.float32, device=self.dev)
         pred = []
         labels_full = []
         for i in (sets_testing):
-            samples = matrix_1_norm_org[:, i:i+self.size]
+            samples = matrix_1_norm[:, i:i+self.size]
             #labels = matrix_1_norm[:, i+self.size]
             for n in range(samples.shape[0]):
                 sample = samples[n, :]
+                #sample = torch.tensor(sample.reshape((self.size, 1)), dtype = torch.float32, device=self.dev)
                 """if(np.isnan(labels[n])):
                     predictions, enc = self(sample, ts = n)
                     matrix_1_norm[n, i+self.size] = predictions"""
@@ -134,7 +153,7 @@ class RegHD(nn.Module):
                 predictions, enc = self(sample, ts = n)
                 pred.append(float(predictions))
                 y[n, i+self.size] = float(predictions)
-                labels_full.append(matrix_1_norm_org[n, i+self.size])
+                labels_full.append(matrix_1_norm_org[n, i+self.size].cpu())
         if (not cv):
             error = mean_squared_error(labels_full, pred, squared=False)
             print(
@@ -385,7 +404,7 @@ class RegHD_Kmeans(RegHD):
                     item = (samples.shape[0]*time) + n
                     self.model_update(encoded[item], label, self.cluster_model[item]) # Pass input and label to train"""
 
-def Return_Model(size, d, models, number_ts, opt):
+def Return_Model(size, d, models, number_ts, opt, dev):
 
     """if(opt.clustering == "none"):
         model_hd = RegHD(size, d, models, number_ts, opt = opt)  # 1 class, 5
@@ -394,9 +413,10 @@ def Return_Model(size, d, models, number_ts, opt):
     elif(opt.clustering == "spectral_clustering"):
         model_hd = RegHD_SpectralClustering(size, d, models, number_ts, opt = opt)"""
 
-    model_hd = RegHD(size, d, models, number_ts, opt = opt)
+    model_hd = RegHD(size, d, models, number_ts, opt = opt, dev = dev)
+    model_hd.to(dev)
 
-    model_hd.lr = opt.learning_rate
+    #model_hd.lr = opt.learning_rate
 
     if(opt.hd_encoder != "nonlinear"):
         model_hd.position = embeddings.Random(size, d)

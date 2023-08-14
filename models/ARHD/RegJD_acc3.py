@@ -64,17 +64,19 @@ class RegHD_AR(nn.Module):
 
         self.size = size # Past samples
         self.d = d # dimension of the hypervector
-        self.lr = kwargs['opt'].learning_rate # alpha
+        self.dev = torch.device(kwargs['dev'])
+        self.lr = torch.tensor([kwargs['opt'].learning_rate]).to(self.dev) # alpha
         self.opt = kwargs['opt']
-        self.project = Projection_2(self.size, d, dtype=torch.float32) # size features to d dimensions = hypervectors like weights?
+        self.project = Projection_2(self.size, d, dtype=torch.float32, device=self.dev) # size features to d dimensions = hypervectors like weights?
         self.project.weight.data.normal_(0, 1) # Normal distributions mean=0.0, std=1.0
-        self.bias = nn.parameter.Parameter(torch.empty(d, self.size), requires_grad=False)
+        self.bias = nn.parameter.Parameter(torch.empty(d, self.size), requires_grad=False).to(self.dev)
         self.bias.data.uniform_(0, 2 * math.pi) # bias
         self.kwargs = kwargs
         #self.covarianceMatrix = 0.1*torch.eye(self.size) # Only need 1 grid for covariance values in each sensor
-        self.covarianceMatrix = torch.ones(self.d, self.d)
-        self.alpha = torch.zeros(1, d).type(torch.FloatTensor) # Weight hypervector
-        self.var = 0 # Variance in original samples
+        self.covarianceMatrix = torch.ones(self.d, self.d).to(self.dev)
+        self.alpha = torch.zeros(1, d).type(torch.FloatTensor).to(self.dev) # Weight hypervector
+        self.var = torch.tensor([0]).to(self.dev) # Variance in original samples
+        self.gamma = torch.tensor([self.opt.alpha]).to(self.dev)
         self.current_ts = None
         self.updateCov = True
         self.past_sim = 0
@@ -96,7 +98,7 @@ class RegHD_AR(nn.Module):
         enc = self.project(torch.reshape(torch.tensor(x), (1, self.size)))
         enc = torch.cos(enc + self.bias) * torch.sin(enc) 
         #enc = self.hard_quantize(multiset(torch.transpose(enc, 0, 1)))
-        enc = hard_quantize(multiset(enc))
+        enc = hard_quantize(torch.sum(enc, dim = 1))
         enc = torch.reshape(enc, (1, self.d))
         return enc
 
@@ -113,12 +115,12 @@ class RegHD_AR(nn.Module):
 
         model_result, enc = self(x, ts = kwargs['ts']) # Prediction
 
-        self.var = (self.opt.alpha * self.var) + (1-self.opt.alpha) * np.var(x) # MA for variance
+        self.var = (self.gamma * self.var) + ((1-self.gamma) * torch.var(x)) # MA for variance
 
-        if (float(self.var) >= 0.001 or float(self.var) <= -0.001):
+        if (self.var[0] >= 0.001 or self.var[0] <= -0.001):
             
             # Update
-            A_t = float(y - model_result) # Innovation
+            A_t = y - model_result # Innovation
 
             if (model_result < 0 or model_result > 1) or (abs(A_t) > 0.1):
                 #temp = self.bind(self.covarianceMatrix > 0, enc > 0)
@@ -128,46 +130,53 @@ class RegHD_AR(nn.Module):
 
                 complete = torch.sum(const)
                 G_t = const / (complete + (self.var*self.d)) # Kalman Gain
-                self.alpha += G_t*A_t*self.opt.learning_rate
+                self.alpha += G_t*A_t*self.lr
                 #self.covarianceMatrix += hard_quantize(torch.mul(G_t, torch.reshape(const, (self.d, 1))))
                 #x = torch.mul(G_t, torch.reshape(const, (self.d, 1)))
-                inter = bind(G_t, torch.reshape(const, (self.d, 1)))
-                self.covarianceMatrix += hard_quantize(inter, 1, -1)
+                #inter = self.bind(G_t > 0, torch.reshape(const > 0, (self.d, 1))).cuda()
+                #self.covarianceMatrix += torch.where(inter, 1, -1)
+                self.covarianceMatrix += bind(hard_quantize(G_t), torch.reshape(const, (self.d, 1)))
     
     def forward(self, x, **kwargs): # With weights x: array of values compute the prediction
         #x = torch.tensor(x.reshape((self.size, 1)), dtype = torch.float32)    
-        enc = self.encode(x, ts = kwargs['ts'])     
-        model_result = F.linear(enc.float(), self.alpha)
+        enc = self.encode(x)
+        model_result = torch.sum(torch.mul(enc, self.alpha))
         # prediction
         
         return model_result, enc
 
     def train(self, sets_training, matrix_1_norm, matrix_1_norm_org, y, epochs, sets_cv):
 
+        size = matrix_1_norm.shape[0]
+        matrix_1_norm = torch.tensor(matrix_1_norm, dtype = torch.float32, device=self.dev)
+        y = torch.tensor(y, dtype = torch.float32, device=self.dev)
+        
         for _ in range(epochs): # Number of iterations for all the samples set to 1
             
-            for n in tqdm(range(matrix_1_norm.shape[0])): # For each ts
+            for n in tqdm(range(size)): # For each ts
                 samples = matrix_1_norm[n, :]
             
                 for i in (sets_training): # For each set in the rolling window
                     
                     sample = samples[i:i+self.size] 
-                    label = torch.tensor(samples[i+self.size])
+                    label = samples[i+self.size]
 
                     self.model_update(sample, label, ts = n, time = i) # Pass input and label to train
                     
                     predictions_testing, enc = self(sample, ts = n)
-                    y[n, i+self.size] = float(predictions_testing)
+                    y[n, i+self.size] = predictions_testing
 
                     """if (i % 5000 == 0):
                         pred, labels_full = self.test(sets_cv, matrix_1_norm, matrix_1_norm_org, y)
                         print(f"\nCross Validation root mean squared error of {(mean_squared_error(labels_full, pred, squared=False)):.3f}")"""
                 
-                if (n % self.opt.print_freq == 0):
-                    pred, labels_full = self.test(sets_cv, matrix_1_norm, matrix_1_norm_org, y)
+                if (n % self.opt.print_freq == 0 and n != 0):
+                    pred, labels_full = self.test(sets_cv, matrix_1_norm, matrix_1_norm_org, y.cpu())
                     print(f"\nCross Validation root mean squared error of {(mean_squared_error(labels_full, pred, squared=False)):.3f}")
     
     def test(self, sets_testing, matrix_1_norm, matrix_1_norm_org, y, cv = True):
+        matrix_1_norm_org = torch.tensor(matrix_1_norm_org, dtype = torch.float32, device=self.dev)
+        matrix_1_norm = torch.tensor(matrix_1_norm, dtype = torch.float32, device=self.dev)
         pred = []
         labels_full = []
         for n in range(matrix_1_norm.shape[0]): # For each ts
@@ -182,7 +191,7 @@ class RegHD_AR(nn.Module):
                 predictions, enc = self(sample, ts = n)
                 pred.append(float(predictions))
                 y[n, i+self.size] = float(predictions)
-                labels_full.append(matrix_1_norm_org[n, i+self.size])
+                labels_full.append(matrix_1_norm_org[n, i+self.size].cpu())
         if (not cv):
             error = mean_squared_error(labels_full, pred, squared=False)
             print(
@@ -192,10 +201,10 @@ class RegHD_AR(nn.Module):
         return pred, labels_full
 
 
-def Return_Model(size, d, models, number_ts, opt):
+def Return_Model(size, d, models, number_ts, opt, dev):
 
     torch.random.manual_seed(opt.trial)
 
-    model_hd = RegHD_AR(size, d, models, number_ts, opt = opt)  # 1 class, 5
+    model_hd = RegHD_AR(size, d, models, number_ts, opt = opt, dev = dev)  # 1 class, 5
 
     return model_hd

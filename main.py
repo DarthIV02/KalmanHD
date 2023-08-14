@@ -13,7 +13,7 @@ import torch
 def parse_option():
     parser = argparse.ArgumentParser('argument for training')
 
-    parser.add_argument('--print_freq', type=int, default=50,
+    parser.add_argument('--print_freq', type=int, default=1000,
                         help='print frequency')
     
     parser.add_argument('--epochs', type=int, default=1,
@@ -46,7 +46,7 @@ def parse_option():
     parser.add_argument('--novelty', type=float, default=0.2,
                         help='cosine similarity difference for a timeseries to be considered new')
     
-    parser.add_argument('--model', type=str, default='VAE', 
+    parser.add_argument('--model', type=str, default='KalmanHD', 
                         choices=['RegHD', 'VAE', 'DNN', 'KalmanFilter', 'KalmanHD'],
                         help='Model to test')
     
@@ -70,6 +70,10 @@ def parse_option():
 
     parser.add_argument('--gaussian_noise', type=float, default=0.0, 
                         help='Standard deviation of the gaussian noise')
+    
+    parser.add_argument('--device', type=str, default='gpu', 
+                        choices=['cpu', 'gpu'],
+                        help='Device to use, either cpu or gpu')
     
     #parser.add_argument('--flipping_rate', type=float, default=0.0, 
     #                    help='Percentage of bits flipped')
@@ -116,17 +120,24 @@ def main():
     gaussian_noise = np.random.normal(0, opt.gaussian_noise, size=(matrix_1_norm.shape[0], matrix_1_norm.shape[1]))
     matrix_1_norm += gaussian_noise
 
+    # Use CPU
+    if opt.device == "cpu":
+        torch.backends.cudnn.enabled = False
+        torch.cuda.is_available = lambda : False
+
     if torch.cuda.is_available():
         print("Using GPU device")
+        dev = "cuda:0"
     else:
         print("Using CPU device")
+        dev = "cpu"
     
     # File to save the results
     csv_file = 'results5.csv'
 
     if opt.model == "RegHD":
         from models.RegHD.RegHD import Return_Model
-        model = Return_Model(opt.size_of_sample, opt.dimension_hd, opt.models, matrix_1_norm.shape[0], opt)
+        model = Return_Model(opt.size_of_sample, opt.dimension_hd, opt.models, matrix_1_norm.shape[0], opt, dev)
         y = np.zeros((matrix_1_norm.shape))
         model.train(sets_training, matrix_1_norm, matrix_1_norm_org, y, opt.epochs, sets_cv)
         error = model.test(sets_testing, matrix_1_norm, matrix_1_norm_org, y, cv=False)
@@ -140,8 +151,8 @@ def main():
 
     if opt.model == "KalmanHD":
         #from models.ARHD.RegHD_AR_M import Return_Model
-        from models.ARHD.RegHD_acc2 import Return_Model
-        model = Return_Model(opt.size_of_sample, opt.dimension_hd, opt.models, matrix_1_norm.shape[0], opt)
+        from models.ARHD.RegJD_acc3 import Return_Model
+        model = Return_Model(opt.size_of_sample, opt.dimension_hd, opt.models, matrix_1_norm.shape[0], opt, dev)
         y = np.zeros((matrix_1_norm.shape))
         model.train(sets_training, matrix_1_norm, matrix_1_norm_org, y, opt.epochs, sets_cv)
         error = model.test(sets_testing, matrix_1_norm, matrix_1_norm_org, y, cv=False)
