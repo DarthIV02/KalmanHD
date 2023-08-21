@@ -59,7 +59,8 @@ class RegHD_AR(nn.Module):
         model_result = self(x, ts = kwargs['ts'])
         x = torch.reshape(torch.tensor(x, dtype = torch.float32), (1, self.state_dim))
         const = torch.matmul(x, torch.matmul(self.covarianceMatrix[kwargs['ts']], torch.transpose(x, 0, 1)))
-        if (float(const + torch.var(x)) >= 0.001 or float(const + torch.var(x)) <= -0.001):
+        #if (float(const + torch.var(x)) = 0.001 or float(const + torch.var(x)) <= -0.001):
+        if (float(const + torch.var(x)) != 0):
             G_t = torch.matmul(self.covarianceMatrix[kwargs['ts']], torch.transpose(x, 0, 1)) / (const + torch.var(x))
     
             A_t = y - model_result
@@ -129,8 +130,8 @@ class RegHD_AR(nn.Module):
         pred = []
         labels_full = []
         for i in (sets_testing):
-            samples = matrix_1_norm_org[:, i:i+self.state_dim]
-            labels = matrix_1_norm[:, i+self.state_dim]
+            samples = matrix_1_norm[:, i:i+self.state_dim]
+            labels = matrix_1_norm_org[:, i+self.state_dim]
             for n in range(samples.shape[0]):
                 sample = samples[n, :]
                 if(np.isnan(labels[n])):

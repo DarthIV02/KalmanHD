@@ -95,7 +95,7 @@ class RegHD_AR(nn.Module):
         return hv
     
     def encode(self, x, **kwargs): # encoding a single value TENSOR of size "size"
-        enc = self.project(torch.reshape(torch.tensor(x), (1, self.size)))
+        enc = self.project(torch.reshape(x, (1, self.size)))
         enc = torch.cos(enc + self.bias) * torch.sin(enc) 
         #enc = self.hard_quantize(multiset(torch.transpose(enc, 0, 1)))
         enc = hard_quantize(torch.sum(enc, dim = 1))
@@ -176,7 +176,8 @@ class RegHD_AR(nn.Module):
     
     def test(self, sets_testing, matrix_1_norm, matrix_1_norm_org, y, cv = True):
         matrix_1_norm_org = torch.tensor(matrix_1_norm_org, dtype = torch.float32, device=self.dev)
-        matrix_1_norm = torch.tensor(matrix_1_norm, dtype = torch.float32, device=self.dev)
+        if (not cv):
+            matrix_1_norm = torch.tensor(matrix_1_norm, dtype = torch.float32, device=self.dev)
         pred = []
         labels_full = []
         for n in range(matrix_1_norm.shape[0]): # For each ts

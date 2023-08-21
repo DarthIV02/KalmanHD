@@ -115,7 +115,7 @@ def Train_Model(model, matrix, sets_training, retraining, dataset, size, epochs,
 
         X_train = X_train.reshape(X_train.shape[0], 1, X_train.shape[1])
 
-        model.fit(X_train, Y_train, epochs=epochs, batch_size=128)
+        model.fit(X_train, Y_train, epochs=epochs, batch_size=1)
 
         model.save_weights(f"trained_models/dnn-{dataset}_{size}_{epochs}_{noise}_{level}.h5")
 
@@ -138,7 +138,7 @@ def Test_Model(model, matrix, sets_testing, size):
                 #sample2 = flip_bits(sample, flipping_rate, size).reshape(1, 1, sample.shape[0])
 
                 # Pass samples from test to model (forward function)
-                predictions = model.predict(sample2)[0][0]
+                predictions = model.predict(sample2, verbose = 0)[0][0]
                 pred.append(predictions)
                 labels_full.append(labels[n])
                 dif_dnn.append(np.absolute(labels[n]-predictions))

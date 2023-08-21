@@ -165,6 +165,7 @@ def Train_Model(vae, es, matrix, sets_training, retraining, dataset, sequence_le
         return vae, enc, dec, es
 
     else:
+        matrix = matrix / np.max(matrix)
         a_full = []
         for i in range(matrix.shape[0]):
             a_full.append(np.append([0], matrix[i][:-1]))  # One shifted
@@ -242,6 +243,7 @@ def Train_Model(vae, es, matrix, sets_training, retraining, dataset, sequence_le
 
 def Test_Model(vae, matrix, sets_testing, sequence_length):
 
+    matrix = matrix / np.max(matrix)
     a_full = []
     for i in range(matrix.shape[0]):
         a_full.append(np.append([0], matrix[i][:-1]))  # One shifted

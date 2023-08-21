@@ -19,7 +19,7 @@ def parse_option():
     parser.add_argument('--epochs', type=int, default=1,
                         help='number of training epochs or number of passes on dataset')
     
-    parser.add_argument('--learning_rate', type=float, default=0.001,
+    parser.add_argument('--learning_rate', type=float, default=0.0001,
                         help='learning rate gradient for the model')
     
     parser.add_argument('--hd_encoder', type=str, default='nonlinear',
@@ -59,7 +59,7 @@ def parse_option():
     parser.add_argument('--retraining', type=bool, default=False,
                         help='If the model with this particular data, has been previously trained, set retraining = True')
     
-    parser.add_argument('--s', type=int, default=10, 
+    parser.add_argument('--s', type=int, default=5, 
                             help='Number of consecutive missing values')
     
     parser.add_argument('--p', type=float, default=0.0, 
@@ -70,6 +70,9 @@ def parse_option():
 
     parser.add_argument('--gaussian_noise', type=float, default=0.0, 
                         help='Standard deviation of the gaussian noise')
+    
+    parser.add_argument('--poisson_noise', type=float, default=0.0, 
+                        help='Lambda for the poisson noise')
     
     parser.add_argument('--device', type=str, default='gpu', 
                         choices=['cpu', 'gpu'],
@@ -103,6 +106,7 @@ def main():
     # rolling window values for training, testing and cross validation
     sets_training = [i for i in range(int((matrix_1_norm.shape[1]-opt.size_of_sample)*0.7))]
     print(len(sets_training))
+    print(matrix_1_norm.shape)
     sets_testing = [i for i in range(int((matrix_1_norm.shape[1]-opt.size_of_sample)*0.7), int((matrix_1_norm.shape[1]-opt.size_of_sample)*0.9))]
     sets_cv = [i for i in range(int((matrix_1_norm.shape[1]-opt.size_of_sample)*0.9), (matrix_1_norm.shape[1]-opt.size_of_sample))]
     sets_missing = {}
@@ -120,6 +124,10 @@ def main():
     gaussian_noise = np.random.normal(0, opt.gaussian_noise, size=(matrix_1_norm.shape[0], matrix_1_norm.shape[1]))
     matrix_1_norm += gaussian_noise
 
+    if opt.poisson_noise != 0:
+        poisson_noise = np.random.poisson(lam=opt.poisson_noise, size=(matrix_1_norm.shape[0], matrix_1_norm.shape[1]))
+        matrix_1_norm += poisson_noise
+
     # Use CPU
     if opt.device == "cpu":
         torch.backends.cudnn.enabled = False
@@ -133,7 +141,7 @@ def main():
         dev = "cpu"
     
     # File to save the results
-    csv_file = 'results5.csv'
+    csv_file = 'results_poisson2.csv'
 
     if opt.model == "RegHD":
         from models.RegHD.RegHD import Return_Model
@@ -171,7 +179,7 @@ def main():
 
     # Write results
     
-    add_value_to_csv(csv_file, opt.dataset, opt.model, opt.models, opt.novelty, opt.learning_rate, opt.hd_representation, "None", opt.p, error)
+    add_value_to_csv(csv_file, opt.dataset, opt.model, opt.models, opt.novelty, opt.learning_rate, opt.hd_representation, "Poisson", opt.poisson_noise, error)
 
     # Visualize results
 

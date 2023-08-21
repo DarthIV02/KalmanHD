@@ -1,0 +1,21 @@
+TimeSeries Dataset,Model,Models,Novelty,Lr,hd_bites,Noise,Level Noise,MAE
+GuangzhouTraffic,KalmanHD,1,0.2,0.01,1,None,0.0,0.38063929708708144
+GuangzhouTraffic,KalmanHD,1,0.2,0.001,1,None,0.0,0.1193193901995304
+GuangzhouTraffic,KalmanHD,1,0.2,0.0001,1,None,0.0,0.13889434689491498
+GuangzhouTraffic,KalmanHD,1,0.2,1e-05,1,None,0.0,0.18250913525729467
+EnergyConsumptionFraunhofer,KalmanHD,1,0.2,0.01,1,None,0.0,0.13517208713711984
+EnergyConsumptionFraunhofer,KalmanHD,1,0.2,0.001,1,None,0.0,0.12995928587178254
+EnergyConsumptionFraunhofer,KalmanHD,1,0.2,0.0001,1,None,0.0,0.17028475495007364
+EnergyConsumptionFraunhofer,KalmanHD,1,0.2,1e-05,1,None,0.0,0.2341606462418362
+ElectricityLoadDiagrams,KalmanHD,1,0.2,0.01,1,None,0.0,3245.21206576573
+ElectricityLoadDiagrams,KalmanHD,1,0.2,0.001,1,None,0.0,0.11459035488578811
+ElectricityLoadDiagrams,KalmanHD,1,0.2,0.0001,1,None,0.0,0.12094152570020228
+ElectricityLoadDiagrams,KalmanHD,1,0.2,1e-05,1,None,0.0,0.16578880664581927
+SanFranciscoTraffic,KalmanHD,1,0.2,0.01,1,None,0.0,0.2146254832246621
+SanFranciscoTraffic,KalmanHD,1,0.2,0.001,1,None,0.0,0.16861279293498854
+SanFranciscoTraffic,KalmanHD,1,0.2,0.0001,1,None,0.0,0.2038456488117465
+SanFranciscoTraffic,KalmanHD,1,0.2,1e-05,1,None,0.0,0.45177735464228264
+MetroInterstateTrafficVolume,KalmanHD,1,0.2,0.01,1,None,0.0,0.09701066303148563
+MetroInterstateTrafficVolume,KalmanHD,1,0.2,0.001,1,None,0.0,0.13354140174887846
+MetroInterstateTrafficVolume,KalmanHD,1,0.2,0.0001,1,None,0.0,0.23923446103961346
+MetroInterstateTrafficVolume,KalmanHD,1,0.2,1e-05,1,None,0.0,0.4369145493344626
