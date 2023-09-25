@@ -1,5 +1,11 @@
 # KalmanHD: Robust On-Device Time Series Forecasting with Hyperdimensional Computing
 
+This repo contains the simulation implementation for paper:
+
+Ivannia Gomez, Xiaofan Yu, Tajana Rosing. "KalmanHD: Robust On-Device Time Series Forecasting with Hyperdimensional Computing" in the Proceedings of ASP-DAC 2024.
+
+[arXiv link]
+
 Steps to setup the code:
    1) Clone this repository.
       ```bash
