@@ -159,7 +159,7 @@ def main():
 
     if opt.model == "KalmanHD":
         #from models.ARHD.RegHD_AR_M import Return_Model
-        from models.ARHD.RegJD_acc3 import Return_Model
+        from models.KalmanHD.KalmanHD_binary import Return_Model
         model = Return_Model(opt.size_of_sample, opt.dimension_hd, opt.models, matrix_1_norm.shape[0], opt, dev)
         y = np.zeros((matrix_1_norm.shape))
         model.train(sets_training, matrix_1_norm, matrix_1_norm_org, y, opt.epochs, sets_cv)
