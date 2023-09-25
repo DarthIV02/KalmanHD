@@ -59,10 +59,10 @@ We provide our scripts for running various experiments in the paper in `scripts`
 .
 ├── run_exp.py                           // Python script for running baselines in all of the datasets with the hyperparameters set in the paper
 ├── run_exp.sh                           // Bash script for running baselines in all of the datasets with the hyperparameters set in the paper
-├── run_baseline.sh                      // Script for running baselines in the random delay setup
-├── run_exp_nycmesh.sh                   // Script for running Async-HFL in the NYCMesh setup
-├── run_exp.sh                           // Script for running Async-HFL in the random delay setup
-├── run_motivation_nycmesh.sh            // Script for running the motivation study
+├── run_exp_gaussian.py                  // Python script for running all of the methods with Gaussian noise added
+├── run_exp_gaussian.sh                  // Bash script for running all of the methods with Gaussian noise added
+├── run_exp_missing.py                   // Python script for running all of the methods with different levels of missing data
+├── run_exp_missing.sh                   // Bash script for running all of the methods with different levels of missing data
 ├── run_sensitivity_pca.sh               // Script for running sensitivity study regarding PCA dimension
 └── run_sensitivity_phi.sh               // Script for running sensitivity study regarding phi
 ```
