@@ -1,5 +1,31 @@
 # KalmanHD: Robust On-Device Time Series Forecasting with Hyperdimensional Computing
 
+This repo contains the simulation implementation for paper:
+
+Ivannia Gomez, Xiaofan Yu, Tajana Rosing. "KalmanHD: Robust On-Device Time Series Forecasting with Hyperdimensional Computing" in the Proceedings of ASP-DAC 2024.
+
+[[arXiv link]]()
+
+## File Structure
+
+```
+.
+├── Stuff              // DatasetLoader and libraries necesarry for running model
+├── images             // Different image results of the models
+├── models             // Implementation of ML models - Baselineas + KalmanHD
+├── preprocessed_data  // Datasets data
+├── scripts            // Collection of bash and .py scripts for various experiments in the paper
+├── LICENSE
+├── load_data.py       // Implementation of data loaders for both image datasets and the LEAF dataset
+├── models             // Implementation of ML models for all datasets
+├── README.md          // This file
+├── requirements.txt   // Prerequisites
+├── run.py             // Main script to fire simulations
+├── server             // Implementation of servers (sync, semi-async, async)
+└── utils              // Necessary util files in FLSim
+```
+
+
 Steps to setup the code:
    1) Clone this repository.
       ```bash
