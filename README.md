@@ -15,14 +15,11 @@ Ivannia Gomez, Xiaofan Yu, Tajana Rosing. "KalmanHD: Robust On-Device Time Serie
 ├── models             // Implementation of ML models - Baselineas + KalmanHD
 ├── preprocessed_data  // Datasets data
 ├── scripts            // Collection of bash and .py scripts for various experiments in the paper
-├── LICENSE
-├── load_data.py       // Implementation of data loaders for both image datasets and the LEAF dataset
-├── models             // Implementation of ML models for all datasets
 ├── README.md          // This file
-├── requirements.txt   // Prerequisites
-├── run.py             // Main script to fire simulations
-├── server             // Implementation of servers (sync, semi-async, async)
-└── utils              // Necessary util files in FLSim
+├── main.py            // Main script to run experiments
+├── plot.ipynb         // Notebook to plot the accuracy results of the different models in the 3 different types of noise
+├── plot_eff.ipynb     // Notebook to plot the running times results of the different models
+└── requirements.txt   // Prerequisites
 ```
 
 
