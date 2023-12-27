@@ -4,7 +4,7 @@ This repo contains the simulation implementation for paper:
 
 Ivannia Gomez, Xiaofan Yu, Tajana Rosing. "KalmanHD: Robust On-Device Time Series Forecasting with Hyperdimensional Computing" in the Proceedings of ASP-DAC 2024.
 
-[[Link Missing]]()
+[Paper](https://cseweb.ucsd.edu/~x1yu/docs/aspdac2024/gomez2024kalmanhd.pdf)
 
 ## File Structure
 
